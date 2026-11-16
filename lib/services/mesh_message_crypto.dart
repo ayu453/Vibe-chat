@@ -13,15 +13,34 @@ class MeshMessageCrypto {
     required LocalIdentity identity,
     required String recipientEncryptionPublicKey,
     required ChatMessage message,
-  }) async {
+  }) => _encryptPayload(identity, recipientEncryptionPublicKey, {
+    'kind': 'message',
+    'messageId': message.id,
+    'text': message.body,
+    'moodId': message.moodId,
+    'soundId': message.soundId,
+    'createdAt': message.createdAt.toIso8601String(),
+  });
+
+  Future<String> encryptReceipt({
+    required LocalIdentity identity,
+    required String recipientEncryptionPublicKey,
+    required String messageId,
+  }) => _encryptPayload(identity, recipientEncryptionPublicKey, {
+    'kind': 'receipt',
+    'messageId': messageId,
+    'createdAt': DateTime.now().toIso8601String(),
+  });
+
+  Future<String> _encryptPayload(
+    LocalIdentity identity,
+    String recipientEncryptionPublicKey,
+    Map<String, Object?> fields,
+  ) async {
     final unsigned = <String, Object?>{
       'senderId': identity.displayId,
       'senderSigningPublicKey': identity.publicKey,
-      'messageId': message.id,
-      'text': message.body,
-      'moodId': message.moodId,
-      'soundId': message.soundId,
-      'createdAt': message.createdAt.toIso8601String(),
+      ...fields,
     };
     final signingPair = SimpleKeyPairData(
       base64Decode(identity.privateKey),
@@ -53,15 +72,7 @@ class MeshMessageCrypto {
         payload['senderSigningPublicKey'] != expectedSigningPublicKey) {
       throw const FormatException('Mesh sender identity mismatch');
     }
-    final unsigned = <String, Object?>{
-      'senderId': payload['senderId'],
-      'senderSigningPublicKey': payload['senderSigningPublicKey'],
-      'messageId': payload['messageId'],
-      'text': payload['text'],
-      'moodId': payload['moodId'],
-      'soundId': payload['soundId'],
-      'createdAt': payload['createdAt'],
-    };
+    final unsigned = Map<String, Object?>.from(payload)..remove('signature');
     final signatureBytes = base64Decode(payload['signature'] as String);
     final key = SimplePublicKey(base64Decode(expectedSigningPublicKey), type: KeyPairType.ed25519);
     final valid = await Ed25519().verify(

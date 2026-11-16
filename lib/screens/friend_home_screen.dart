@@ -87,7 +87,6 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     final recent = await _db.conversations();
     if (!mounted) return;
     setState(() { _accepted = accepted; _requests = requests; _recent = recent; _loading = false; });
-    unawaited(_meshGateway.refreshSubscriptions());
   }
 
   bool _isControl(String body) => body.startsWith('vibe-control:');
@@ -119,6 +118,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
             status: 'requested', direction: 'incoming');
         } else if (data['action'] == 'accepted') {
           await _db.setContactStatus(invite.id, 'accepted');
+          unawaited(_meshGateway.refreshSubscriptions());
         }
       } catch (_) {}
       await _refresh();
@@ -211,12 +211,14 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     if (!FriendRequestPolicy.canAccept(status: contact['status']! as String, direction: contact['direction']! as String)) return;
     final id = contact['id']! as String;
     await _db.setContactStatus(id, 'accepted');
+    unawaited(_meshGateway.refreshSubscriptions());
     try { await _sendControl(id, 'accepted'); } catch (_) {}
     await _refresh();
   }
 
   Future<void> _block(String id) async {
     await _db.setContactStatus(id, 'blocked');
+    unawaited(_meshGateway.refreshSubscriptions());
     await _refresh();
   }
 
@@ -227,11 +229,12 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
       content: Text('The encryption key for $id changed. Only continue if you verified this change with the person through another trusted channel.'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm key'))],
     ));
-    if (confirmed == true) { await _db.confirmContactKey(id); await _refresh(); }
+    if (confirmed == true) { await _db.confirmContactKey(id); unawaited(_meshGateway.refreshSubscriptions()); await _refresh(); }
   }
 
   Future<void> _delete(String id) async {
     await _db.deleteContact(id);
+    unawaited(_meshGateway.refreshSubscriptions());
     await _refresh();
   }
 

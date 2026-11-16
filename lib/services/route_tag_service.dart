@@ -3,8 +3,8 @@ import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'identity_service.dart';
 
-/// Pairwise tags are derived from the X25519 shared secret. Never derive them
-/// from a public key: that would let any observer calculate/track recipients.
+/// Pairwise, directional daily tags. Direction prevents the sender from
+/// subscribing to its own outgoing envelopes while keeping IDs off the wire.
 class RouteTagService {
   const RouteTagService(this._pairwiseSecret);
   final List<int> _pairwiseSecret;
@@ -27,19 +27,27 @@ class RouteTagService {
     return RouteTagService(await shared.extractBytes());
   }
 
-  String tagForDay(DateTime day) {
+  String tagForDay(
+    DateTime day, {
+    required String senderId,
+    required String recipientId,
+  }) {
     final utc = DateTime.utc(day.year, day.month, day.day);
     final dayLabel = '${utc.year.toString().padLeft(4, '0')}-'
         '${utc.month.toString().padLeft(2, '0')}-'
         '${utc.day.toString().padLeft(2, '0')}';
-    final mac = Hmac(sha256, _pairwiseSecret)
-        .convert(utf8.encode('vibe-route-tag-v1|$dayLabel'));
+    final context = 'vibe-route-tag-v1|$senderId|$recipientId|$dayLabel';
+    final mac = Hmac(sha256, _pairwiseSecret).convert(utf8.encode(context));
     return base64Url.encode(mac.bytes).replaceAll('=', '');
   }
 
-  /// Current day plus previous day allows messages crossing midnight.
-  List<String> subscriptionTags(DateTime now) => [
-    tagForDay(now),
-    tagForDay(now.subtract(const Duration(days: 1))),
+  List<String> subscriptionTags(
+    DateTime now, {
+    required String senderId,
+    required String recipientId,
+  }) => [
+    tagForDay(now, senderId: senderId, recipientId: recipientId),
+    tagForDay(now.subtract(const Duration(days: 1)),
+      senderId: senderId, recipientId: recipientId),
   ];
 }

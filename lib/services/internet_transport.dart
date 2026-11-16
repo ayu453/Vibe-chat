@@ -31,6 +31,7 @@ class InternetTransport implements MessageTransport {
   String? _meshUploadToken;
   Completer<String>? _meshTokenWaiter;
   bool _flushingMesh = false;
+  Future<void> _meshPublishChain = Future<void>.value();
   final Set<String> _uploadedMeshIds = {};
   final _lookups = <String, Completer<Map<String, dynamic>?>>{};
   WebSocketChannel? _channel;
@@ -66,11 +67,15 @@ class InternetTransport implements MessageTransport {
     });
   }
 
-  Future<void> publishMeshEnvelope(MeshEnvelope envelope) async {
-    await _ready?.future.timeout(const Duration(seconds: 12));
-    if (_channel == null) throw StateError('Relay is not connected');
-    final token = await _takeMeshToken();
-    _sendPacket({'type': 'mesh_publish', 'token': token, 'envelope': envelope.toJson()});
+  Future<void> publishMeshEnvelope(MeshEnvelope envelope) {
+    final task = _meshPublishChain.then((_) async {
+      await _ready?.future.timeout(const Duration(seconds: 12));
+      if (_channel == null) throw StateError('Relay is not connected');
+      final token = await _takeMeshToken();
+      _sendPacket({'type': 'mesh_publish', 'token': token, 'envelope': envelope.toJson()});
+    });
+    _meshPublishChain = task.catchError((_) {});
+    return task;
   }
 
   Future<void> _flushMeshOutbox() async {
@@ -282,7 +287,7 @@ class InternetTransport implements MessageTransport {
     );
     final envelope = MeshEnvelope(
       id: 'vibe_msg_${message.id}',
-      tag: route.tagForDay(DateTime.now()),
+      tag: route.tagForDay(DateTime.now(), senderId: identity.displayId, recipientId: message.conversationId),
       ciphertext: ciphertext,
       createdAt: now,
       expiresAt: now + MeshEnvelope.maxLifetimeMs,

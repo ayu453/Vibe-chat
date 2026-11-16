@@ -58,8 +58,8 @@ void main() {
   test('route tags rotate daily and include yesterday during overlap', () {
     const tags = RouteTagService([1, 2, 3, 4, 5, 6]);
     final day = DateTime.utc(2026, 11, 16);
-    expect(tags.tagForDay(day), isNot(tags.tagForDay(day.add(const Duration(days: 1)))));
-    expect(tags.subscriptionTags(day), [tags.tagForDay(day), tags.tagForDay(day.subtract(const Duration(days: 1)))]);
+    expect(tags.tagForDay(day, senderId: 'alice', recipientId: 'bob'), isNot(tags.tagForDay(day.add(const Duration(days: 1)), senderId: 'alice', recipientId: 'bob')));
+    expect(tags.subscriptionTags(day, senderId: 'alice', recipientId: 'bob'), [tags.tagForDay(day), tags.tagForDay(day.subtract(const Duration(days: 1)), senderId: 'alice', recipientId: 'bob')]);
   });
 
   test('X25519 contact pair derives matching route tags', () async {
@@ -81,7 +81,8 @@ void main() {
     final b = await RouteTagService.forContact(
       identity: bob, contactEncryptionPublicKey: alice.encryptionPublicKey);
     final day = DateTime.utc(2026, 11, 16);
-    expect(a.tagForDay(day), b.tagForDay(day));
+    expect(a.tagForDay(day, senderId: 'alice', recipientId: 'bob'), b.tagForDay(day, senderId: 'alice', recipientId: 'bob'));
+    expect(a.tagForDay(day, senderId: 'alice', recipientId: 'bob'), isNot(a.tagForDay(day, senderId: 'bob', recipientId: 'alice')));
   });
 
   test('same shared secret yields same tag; different contact secret does not', () {
@@ -90,6 +91,6 @@ void main() {
     final other = RouteTagService(List<int>.filled(32, 8));
     final day = DateTime.utc(2026, 11, 16);
     expect(a.tagForDay(day), b.tagForDay(day));
-    expect(a.tagForDay(day), isNot(other.tagForDay(day)));
+    expect(a.tagForDay(day, senderId: 'alice', recipientId: 'bob'), isNot(other.tagForDay(day, senderId: 'alice', recipientId: 'bob')));
   });
 }

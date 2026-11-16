@@ -43,7 +43,7 @@ class MeshGatewayService {
       final tags = await RouteTagService.forContact(
         identity: identity,
         contactEncryptionPublicKey: contact['encryption_public_key']! as String,
-      ).then((service) => service.subscriptionTags(DateTime.now()));
+      ).then((service) => service.subscriptionTags(DateTime.now(), senderId: contact['id']! as String, recipientId: identity.displayId));
       for (final tag in tags) {
         next[tag] = contact;
       }
@@ -84,6 +84,15 @@ class MeshGatewayService {
         expectedSigningPublicKey: contact['signing_public_key']! as String,
         ciphertext: envelope.ciphertext,
       );
+      if (payload['kind'] == 'receipt') {
+        await _db.updateStatus(payload['messageId']! as String, 'delivered');
+        await _outbox.remove(envelope.id);
+        return;
+      }
+      if (payload['kind'] != 'message') {
+        await _outbox.remove(envelope.id);
+        return;
+      }
       final message = ChatMessage(
         id: payload['messageId']! as String,
         conversationId: id,
@@ -96,9 +105,32 @@ class MeshGatewayService {
         status: 'delivered',
       );
       await _db.insertMessage(message);
+      final receiptCiphertext = await _crypto.encryptReceipt(
+        identity: identity,
+        recipientEncryptionPublicKey: contact['encryption_public_key']! as String,
+        messageId: message.id,
+      );
+      final route = await RouteTagService.forContact(
+        identity: identity,
+        contactEncryptionPublicKey: contact['encryption_public_key']! as String,
+      );
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final receipt = MeshEnvelope(
+        id: 'receipt_${message.id}',
+        tag: route.tagForDay(DateTime.now(),
+          senderId: identity.displayId, recipientId: id),
+        ciphertext: receiptCiphertext,
+        createdAt: now,
+        expiresAt: now + MeshEnvelope.maxLifetimeMs,
+        hopCount: 0,
+        copiesLeft: MeshEnvelope.maxCopies,
+      );
+      await _outbox.store(receipt, nowMs: now);
+      try { await transport.publishMeshEnvelope(receipt); } catch (_) {}
       await _outbox.remove(envelope.id);
     } catch (_) {
-      // Unmatched, malformed, or unauthenticated packets are discarded.
+      // Invalid packets are removed so they cannot occupy carrier storage.
+      await _outbox.remove(envelope.id);
     }
   }
 
