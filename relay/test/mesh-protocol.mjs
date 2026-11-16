@@ -73,6 +73,7 @@ const envelope = {
 };
 const delivery = nextPacket(recipient.ws, p => p.type === 'mesh_envelope');
 const refreshedToken = nextPacket(gateway.ws, p => p.type === 'mesh_upload_token');
+const storedStatus = nextPacket(gateway.ws, p => p.type === 'mesh_status');
 gateway.ws.send(JSON.stringify({
   type: 'mesh_publish', token: gateway.token, envelope
 }));
@@ -82,26 +83,25 @@ assert.equal(delivered.envelope.tag, tag);
 assert.equal('from' in delivered.envelope, false);
 assert.equal('to' in delivered.envelope, false);
 const nextToken = (await refreshedToken).token;
-const stored = await nextPacket(gateway.ws, p => p.type === 'mesh_status');
-assert.equal(stored.status, 'stored');
+assert.equal((await storedStatus).status, 'stored');
 
-const duplicateToken = nextPacket(gateway.ws, p => p.type === 'mesh_upload_token');
-const duplicateStatus = nextPacket(gateway.ws, p => p.type === 'mesh_status');
+const duplicateTokenPromise = nextPacket(gateway.ws, p => p.type === 'mesh_upload_token');
+const duplicateStatusPromise = nextPacket(gateway.ws, p => p.type === 'mesh_status');
 gateway.ws.send(JSON.stringify({
   type: 'mesh_publish', token: nextToken, envelope
 }));
-await duplicateToken;
-assert.equal((await duplicateStatus).status, 'duplicate');
+const duplicateToken = (await duplicateTokenPromise).token;
+assert.equal((await duplicateStatusPromise).status, 'duplicate');
 
-const invalidToken = nextPacket(gateway.ws, p => p.type === 'mesh_upload_token');
-const invalidPacket = nextPacket(gateway.ws, p => p.type === 'error');
+const invalidTokenPromise = nextPacket(gateway.ws, p => p.type === 'mesh_upload_token');
+const invalidPacketPromise = nextPacket(gateway.ws, p => p.type === 'error');
 gateway.ws.send(JSON.stringify({
   type: 'mesh_publish',
-  token: (await nextPacket(gateway.ws, p => p.type === 'mesh_upload_token')).token,
+  token: duplicateToken,
   envelope: { ...envelope, id: 'mesh_expired_envelope_001', expiresAt: Date.now() - 1 }
 }));
-await invalidToken;
-assert.equal((await invalidPacket).code, 'INVALID_ENVELOPE');
+await invalidTokenPromise;
+assert.equal((await invalidPacketPromise).code, 'INVALID_ENVELOPE');
 
 recipient.ws.close();
 gateway.ws.close();
