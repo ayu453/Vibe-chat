@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "test:two-clients": "node test/two-clients.mjs",
-    "test:mesh-router": "node test/mesh-router.mjs"
+    "test:mesh-router": "node test/mesh-router.mjs",
+    "test:mesh-protocol": "node test/mesh-protocol.mjs"
   },
   "engines": {
     "node": ">=20"
