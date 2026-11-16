@@ -16,6 +16,7 @@ import '../services/internet_transport.dart';
 import '../services/local_database.dart';
 import '../services/friend_request_policy.dart';
 import 'mesh_debug_screen.dart';
+import '../services/mesh_gateway_service.dart';
 
 class FriendHomeScreen extends StatefulWidget {
   const FriendHomeScreen({super.key, required this.identity});
@@ -27,6 +28,7 @@ class FriendHomeScreen extends StatefulWidget {
 class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerProviderStateMixin {
   final _db = LocalDatabase();
   late final InternetTransport _transport;
+  late final MeshGatewayService _meshGateway;
   late final TabController _tabs;
   StreamSubscription<ChatMessage>? _incoming;
   StreamSubscription<Uri>? _links;
@@ -43,6 +45,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _transport = InternetTransport(identity: widget.identity);
+    _meshGateway = MeshGatewayService(identity: widget.identity, transport: _transport);
+    unawaited(_meshGateway.start());
     _incoming = _transport.incomingMessages.listen(_handleIncoming);
     _inviteReady = _loadMyInvite();
     _refresh();
@@ -83,6 +87,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     final recent = await _db.conversations();
     if (!mounted) return;
     setState(() { _accepted = accepted; _requests = requests; _recent = recent; _loading = false; });
+    unawaited(_meshGateway.refreshSubscriptions());
   }
 
   bool _isControl(String body) => body.startsWith('vibe-control:');
@@ -248,6 +253,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _incoming?.cancel();
     _links?.cancel();
     _refreshTimer?.cancel();
+    _meshGateway.dispose();
     _transport.dispose();
     super.dispose();
   }
