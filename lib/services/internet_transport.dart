@@ -9,6 +9,8 @@ import '../models/chat_message.dart';
 import 'identity_service.dart';
 import 'message_crypto.dart';
 import 'message_transport.dart';
+import 'friend_invite.dart';
+import 'local_database.dart';
 
 class InternetTransport implements MessageTransport {
   InternetTransport({required this.identity, String relayUrl = RelayConfig.relayUrl})
@@ -16,6 +18,7 @@ class InternetTransport implements MessageTransport {
   final LocalIdentity identity;
   final String _relayUrl;
   final _crypto = MessageCrypto();
+  final _db = LocalDatabase();
   final _incoming = StreamController<ChatMessage>.broadcast();
   final _statuses = StreamController<MessageStatusUpdate>.broadcast();
   final _lookups = <String, Completer<Map<String, dynamic>?>>{};
@@ -137,6 +140,30 @@ class InternetTransport implements MessageTransport {
     return _verifyPeerKey(id, peer);
   }
 
+  Future<FriendInvite?> resolveInvite(String id) async {
+    await _ready?.future.timeout(const Duration(seconds: 12));
+    if (_channel == null || _ready == null || !_ready!.isCompleted) {
+      throw StateError('Relay is not connected');
+    }
+    final requestId = '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 20)}';
+    final completer = Completer<Map<String, dynamic>?>();
+    _lookups[requestId] = completer;
+    _sendPacket({'type': 'lookup', 'to': id, 'requestId': requestId});
+    final peer = await completer.future.timeout(const Duration(seconds: 8), onTimeout: () {
+      _lookups.remove(requestId);
+      return null;
+    });
+    if (peer == null) return null;
+    await _verifyPeerKey(id, peer);
+    return FriendInvite.fromIdentity(
+      username: peer['username'] as String,
+      signingPublicKey: peer['signingPublicKey'] as String,
+      encryptionPublicKey: peer['encryptionPublicKey'] as String,
+      encryptionKeySignature: peer['encryptionKeySignature'] as String,
+      relayUrl: _relayUrl,
+    );
+  }
+
   Future<void> _receive(Map<String, dynamic> packet) async {
     final envelope = packet['envelope'] as Map<String, dynamic>;
     final sender = envelope['from'] as String;
@@ -146,6 +173,20 @@ class InternetTransport implements MessageTransport {
       'encryptionPublicKey': packet['senderEncryptionPublicKey'],
       'encryptionKeySignature': packet['senderEncryptionKeySignature'],
     });
+    if (await _db.isBlocked(sender)) return;
+    final known = await _db.contact(sender);
+    if (known != null) {
+      final changed = known['signing_public_key'] != packet['senderSigningPublicKey'] ||
+          known['encryption_public_key'] != packet['senderEncryptionPublicKey'];
+      if (changed) {
+        await _db.markContactKeyChanged(sender,
+          signingPublicKey: packet['senderSigningPublicKey'] as String,
+          encryptionPublicKey: packet['senderEncryptionPublicKey'] as String,
+          encryptionKeySignature: packet['senderEncryptionKeySignature'] as String);
+        return;
+      }
+      if ((known['key_changed'] as int? ?? 0) == 1 || known['status'] == 'blocked') return;
+    }
     final payload = await _crypto.decrypt(identity: identity, senderPublicKey: senderKey,
         ciphertext: envelope['ciphertext'] as String);
     _incoming.add(ChatMessage(
@@ -163,6 +204,11 @@ class InternetTransport implements MessageTransport {
     if (_channel == null || _ready == null || !_ready!.isCompleted) throw StateError('Relay is not connected');
     final peerKey = await _lookupPeer(message.conversationId);
     if (peerKey == null) throw StateError('Recipient has not registered with this relay yet');
+    final known = await _db.contact(message.conversationId);
+    if (known != null && ((known['key_changed'] as int? ?? 0) == 1 || known['encryption_public_key'] != peerKey)) {
+      throw StateError('Contact key changed. Confirm the new key before sending.');
+    }
+    if (known != null && known['status'] == 'blocked') throw StateError('This contact is blocked.');
     final ciphertext = await _crypto.encrypt(identity: identity, recipientPublicKey: peerKey, payload: {
       'text': message.body, 'moodId': message.moodId,
       'soundId': message.soundId, 'createdAt': message.createdAt.toIso8601String(),
