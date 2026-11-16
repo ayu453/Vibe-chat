@@ -85,7 +85,7 @@ class MeshGatewayService {
       await _outbox.store(envelope);
       final payload = await _crypto.decryptAndVerify(
         identity: identity,
-        senderEncryptionPublicKey: contact['encryption_public_key']! as String,
+        senderEncryptionPublicKey: freshContact['encryption_public_key']! as String,
         expectedSenderId: id,
         expectedSigningPublicKey: freshContact['signing_public_key']! as String,
         ciphertext: envelope.ciphertext,
@@ -115,7 +115,7 @@ class MeshGatewayService {
       transport.emitMeshMessage(message);
       final receiptCiphertext = await _crypto.encryptReceipt(
         identity: identity,
-        recipientEncryptionPublicKey: contact['encryption_public_key']! as String,
+        recipientEncryptionPublicKey: freshContact['encryption_public_key']! as String,
         messageId: message.id,
       );
       final route = await RouteTagService.forContact(
@@ -136,9 +136,7 @@ class MeshGatewayService {
         copiesLeft: MeshEnvelope.maxCopies,
       );
       await _outbox.store(receipt, nowMs: now);
-      if (true) {
-        try { await transport.publishMeshEnvelope(receipt); } catch (_) {}
-      }
+      try { await transport.publishMeshEnvelope(receipt); } catch (_) {}
       await _outbox.remove(envelope.id);
     } catch (_) {
       // Invalid packets are removed so they cannot occupy carrier storage.
