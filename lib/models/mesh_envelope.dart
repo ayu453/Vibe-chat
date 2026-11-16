@@ -3,13 +3,9 @@ import 'dart:convert';
 /// Opaque packet carried by relays. No sender or recipient identity is exposed.
 class MeshEnvelope {
   const MeshEnvelope({
-    required this.id,
-    required this.tag,
-    required this.ciphertext,
-    required this.createdAt,
-    required this.expiresAt,
-    required this.hopCount,
-    required this.copiesLeft,
+    required this.id, required this.tag, required this.ciphertext,
+    required this.createdAt, required this.expiresAt,
+    required this.hopCount, required this.copiesLeft,
   });
 
   static const int maxBytes = 32 * 1024;
@@ -17,41 +13,27 @@ class MeshEnvelope {
   static const int maxHops = 8;
   static const int maxCopies = 6;
 
-  final String id;
-  final String tag;
-  final String ciphertext;
-  final int createdAt;
-  final int expiresAt;
-  final int hopCount;
-  final int copiesLeft;
-
+  final String id, tag, ciphertext;
+  final int createdAt, expiresAt, hopCount, copiesLeft;
   bool isExpiredAt(int nowMs) => expiresAt <= nowMs;
   bool get canForward => hopCount < maxHops && copiesLeft > 0;
 
   Map<String, Object> toJson() => {
-    'id': id,
-    'tag': tag,
-    'ciphertext': ciphertext,
-    'createdAt': createdAt,
-    'expiresAt': expiresAt,
-    'hopCount': hopCount,
-    'copiesLeft': copiesLeft,
+    'id': id, 'tag': tag, 'ciphertext': ciphertext,
+    'createdAt': createdAt, 'expiresAt': expiresAt,
+    'hopCount': hopCount, 'copiesLeft': copiesLeft,
   };
-
   String encode() => jsonEncode(toJson());
 
   factory MeshEnvelope.fromJson(Map<String, dynamic> json) {
-    final envelope = MeshEnvelope(
-      id: json['id'] as String,
-      tag: json['tag'] as String,
+    final value = MeshEnvelope(
+      id: json['id'] as String, tag: json['tag'] as String,
       ciphertext: json['ciphertext'] as String,
-      createdAt: json['createdAt'] as int,
-      expiresAt: json['expiresAt'] as int,
-      hopCount: json['hopCount'] as int,
-      copiesLeft: json['copiesLeft'] as int,
+      createdAt: json['createdAt'] as int, expiresAt: json['expiresAt'] as int,
+      hopCount: json['hopCount'] as int, copiesLeft: json['copiesLeft'] as int,
     );
-    envelope.validate();
-    return envelope;
+    value.validate();
+    return value;
   }
 
   void validate({int? nowMs}) {
@@ -65,9 +47,9 @@ class MeshEnvelope {
     if (ciphertext.isEmpty || utf8.encode(encode()).length > maxBytes) {
       throw const FormatException('Envelope exceeds size limit');
     }
-    if (createdAt > now + 5 * 60 * 1000 || expiresAt <= createdAt ||
-        expiresAt - createdAt > maxLifetimeMs) {
-      throw const FormatException('Invalid envelope lifetime');
+    if (createdAt > now + 5 * 60 * 1000 || expiresAt <= now ||
+        expiresAt <= createdAt || expiresAt - createdAt > maxLifetimeMs) {
+      throw const FormatException('Invalid or expired envelope lifetime');
     }
     if (hopCount < 0 || hopCount > maxHops ||
         copiesLeft < 0 || copiesLeft > maxCopies) {
@@ -77,14 +59,8 @@ class MeshEnvelope {
 
   MeshEnvelope forwarded() {
     if (!canForward) throw StateError('Forwarding budget exhausted');
-    return MeshEnvelope(
-      id: id,
-      tag: tag,
-      ciphertext: ciphertext,
-      createdAt: createdAt,
-      expiresAt: expiresAt,
-      hopCount: hopCount + 1,
-      copiesLeft: copiesLeft - 1,
-    );
+    return MeshEnvelope(id: id, tag: tag, ciphertext: ciphertext,
+      createdAt: createdAt, expiresAt: expiresAt,
+      hopCount: hopCount + 1, copiesLeft: copiesLeft - 1);
   }
 }
