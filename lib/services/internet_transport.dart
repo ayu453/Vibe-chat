@@ -127,19 +127,6 @@ class InternetTransport implements MessageTransport {
     return encryptionKey;
   }
 
-  Future<String?> _lookupPeer(String id) async {
-    final requestId = '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 20)}';
-    final completer = Completer<Map<String, dynamic>?>();
-    _lookups[requestId] = completer;
-    _sendPacket({'type': 'lookup', 'to': id, 'requestId': requestId});
-    final peer = await completer.future.timeout(const Duration(seconds: 8), onTimeout: () {
-      _lookups.remove(requestId);
-      return null;
-    });
-    if (peer == null) return null;
-    return _verifyPeerKey(id, peer);
-  }
-
   Future<FriendInvite?> resolveInvite(String id) async {
     await _ready?.future.timeout(const Duration(seconds: 12));
     if (_channel == null || _ready == null || !_ready!.isCompleted) {
