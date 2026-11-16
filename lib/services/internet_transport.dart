@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/relay_config.dart';
@@ -18,7 +19,7 @@ class InternetTransport implements MessageTransport {
   final _crypto = MessageCrypto();
   final _incoming = StreamController<ChatMessage>.broadcast();
   final _statuses = StreamController<MessageStatusUpdate>.broadcast();
-  final _lookups = <String, Completer<String?>>{};
+  final _lookups = <String, Completer<Map<String, dynamic>?>>{};
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   Completer<void>? _ready;
@@ -57,25 +58,32 @@ class InternetTransport implements MessageTransport {
     _reconnectTimer = Timer(Duration(seconds: min(30, pow(2, _attempt).toInt())), _connect);
   }
 
-  void _onPacket(dynamic raw) async {
+  Future<SimpleKeyPairData> _signingPair() async => SimpleKeyPairData(
+    base64Decode(identity.privateKey),
+    publicKey: SimplePublicKey(base64Decode(identity.publicKey), type: KeyPairType.ed25519),
+    type: KeyPairType.ed25519,
+  );
+
+  Future<void> _onPacket(dynamic raw) async {
     try {
       final packet = jsonDecode(raw as String) as Map<String, dynamic>;
       switch (packet['type']) {
         case 'challenge':
-          final pair = SimpleKeyPairData(base64Decode(identity.privateKey),
-              publicKey: SimplePublicKey(base64Decode(identity.publicKey), type: KeyPairType.ed25519),
-              type: KeyPairType.ed25519);
           final proof = [
             ...base64Decode(packet['challenge'] as String),
             ...utf8.encode(identity.username),
             ...base64Decode(identity.encryptionPublicKey),
           ];
+          final pair = await _signingPair();
           final signature = await Ed25519().sign(proof, keyPair: pair);
+          final binding = utf8.encode('vibe-chat-x25519-v1|${identity.username}|${identity.encryptionPublicKey}');
+          final keySignature = await Ed25519().sign(binding, keyPair: pair);
           _sendPacket({
             'type': 'auth', 'username': identity.username,
             'signingPublicKey': identity.publicKey,
             'encryptionPublicKey': identity.encryptionPublicKey,
             'signature': base64Encode(signature.bytes),
+            'encryptionKeySignature': base64Encode(keySignature.bytes),
           });
           break;
         case 'authenticated':
@@ -85,7 +93,7 @@ class InternetTransport implements MessageTransport {
         case 'lookup_result':
           final completer = _lookups.remove(packet['requestId']);
           if (completer != null && !completer.isCompleted) {
-            completer.complete(packet['found'] == true ? packet['encryptionPublicKey'] as String : null);
+            completer.complete(packet['found'] == true ? packet : null);
           }
           break;
         case 'message':
@@ -102,22 +110,43 @@ class InternetTransport implements MessageTransport {
     } catch (_) {}
   }
 
+  Future<String> _verifyPeerKey(String expectedId, Map<String, dynamic> peer) async {
+    final username = peer['username'] as String;
+    final signingBytes = base64Decode(peer['signingPublicKey'] as String);
+    final encryptionKey = peer['encryptionPublicKey'] as String;
+    final signatureBytes = base64Decode(peer['encryptionKeySignature'] as String);
+    final code = sha256.convert(signingBytes).toString().substring(0, 4).toUpperCase();
+    if (expectedId != '$username#$code') throw const FormatException('Peer identity fingerprint mismatch');
+    final publicKey = SimplePublicKey(signingBytes, type: KeyPairType.ed25519);
+    final signature = Signature(signatureBytes, publicKey: publicKey);
+    final binding = utf8.encode('vibe-chat-x25519-v1|$username|$encryptionKey');
+    final valid = await Ed25519().verify(binding, signature: signature, publicKey: publicKey);
+    if (!valid) throw const FormatException('Peer encryption key signature invalid');
+    return encryptionKey;
+  }
+
   Future<String?> _lookupPeer(String id) async {
     final requestId = '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 20)}';
-    final completer = Completer<String?>();
+    final completer = Completer<Map<String, dynamic>?>();
     _lookups[requestId] = completer;
     _sendPacket({'type': 'lookup', 'to': id, 'requestId': requestId});
-    return completer.future.timeout(const Duration(seconds: 8), onTimeout: () {
+    final peer = await completer.future.timeout(const Duration(seconds: 8), onTimeout: () {
       _lookups.remove(requestId);
       return null;
     });
+    if (peer == null) return null;
+    return _verifyPeerKey(id, peer);
   }
 
   Future<void> _receive(Map<String, dynamic> packet) async {
     final envelope = packet['envelope'] as Map<String, dynamic>;
-    final senderKey = packet['senderEncryptionPublicKey'] as String?;
-    if (senderKey == null) return;
     final sender = envelope['from'] as String;
+    final senderKey = await _verifyPeerKey(sender, {
+      'username': packet['senderUsername'],
+      'signingPublicKey': packet['senderSigningPublicKey'],
+      'encryptionPublicKey': packet['senderEncryptionPublicKey'],
+      'encryptionKeySignature': packet['senderEncryptionKeySignature'],
+    });
     final payload = await _crypto.decrypt(identity: identity, senderPublicKey: senderKey,
         ciphertext: envelope['ciphertext'] as String);
     _incoming.add(ChatMessage(

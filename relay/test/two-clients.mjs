@@ -9,7 +9,10 @@ function client(username) {
   const encryption = generateKeyPairSync('x25519');
   const signingRaw = signing.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32);
   const encryptionRaw = encryption.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32);
-  return { username, id: username + '#' + suffix(signingRaw), signing, signingRaw, encryptionRaw };
+  const encryptionKeySignature = sign(null,
+    Buffer.from('vibe-chat-x25519-v1|' + username + '|' + encryptionRaw.toString('base64')),
+    signing.privateKey);
+  return { username, id: username + '#' + suffix(signingRaw), signing, signingRaw, encryptionRaw, encryptionKeySignature };
 }
 function nextPacket(ws, predicate, timeout = 5000) {
   return new Promise((resolve, reject) => {
@@ -35,7 +38,8 @@ async function connect(identity) {
     type: 'auth', username: identity.username,
     signingPublicKey: identity.signingRaw.toString('base64'),
     encryptionPublicKey: identity.encryptionRaw.toString('base64'),
-    signature: signature.toString('base64')
+    signature: signature.toString('base64'),
+    encryptionKeySignature: identity.encryptionKeySignature.toString('base64')
   }));
   const auth = await authPromise;
   assert.equal(auth.id, identity.id);
@@ -58,6 +62,7 @@ assert.equal(received.envelope.from, alice.id);
 assert.equal(received.envelope.to, bob.id);
 assert.equal(received.envelope.ciphertext, envelope.ciphertext);
 assert.equal(received.senderEncryptionPublicKey, alice.encryptionRaw.toString('base64'));
+assert.equal(received.senderEncryptionKeySignature, alice.encryptionKeySignature.toString('base64'));
 assert.equal((await deliveredStatus).status, 'delivered');
 aliceWs.close(); bobWs.close();
 console.log('PASS: two authenticated fake clients exchanged an opaque envelope.');

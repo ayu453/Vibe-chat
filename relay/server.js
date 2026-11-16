@@ -22,7 +22,14 @@ function send(ws, value) {
 }
 function deliver(ws, envelope) {
   const sender = knownIdentities.get(envelope.from);
-  send(ws, { type: 'message', envelope, senderEncryptionPublicKey: sender?.encryptionPublicKey || null });
+  send(ws, {
+    type: 'message',
+    envelope,
+    senderUsername: sender?.username || null,
+    senderSigningPublicKey: sender?.signingPublicKey || null,
+    senderEncryptionPublicKey: sender?.encryptionPublicKey || null,
+    senderEncryptionKeySignature: sender?.encryptionKeySignature || null
+  });
 }
 function cleanup() {
   const now = Date.now();
@@ -56,16 +63,22 @@ wss.on('connection', ws => {
         const signingKey = Buffer.from(packet.signingPublicKey || '', 'base64');
         const encryptionKey = Buffer.from(packet.encryptionPublicKey || '', 'base64');
         const signature = Buffer.from(packet.signature || '', 'base64');
-        if (!/^[A-Za-z0-9_]{3,20}$/.test(username) || signingKey.length !== 32 || encryptionKey.length !== 32) {
+        const keySignature = Buffer.from(packet.encryptionKeySignature || '', 'base64');
+        if (!/^[A-Za-z0-9_]{3,20}$/.test(username) || signingKey.length !== 32 ||
+            encryptionKey.length !== 32 || keySignature.length !== 64) {
           ws.close(4004, 'invalid identity'); return;
         }
         const key = createPublicKey({ key: Buffer.concat([publicKeyPrefix, signingKey]), format: 'der', type: 'spki' });
         const proof = Buffer.concat([challenge, Buffer.from(username, 'utf8'), encryptionKey]);
-        if (!verify(null, proof, key, signature)) { ws.close(4005, 'challenge signature invalid'); return; }
+        const binding = Buffer.from('vibe-chat-x25519-v1|' + username + '|' + encryptionKey.toString('base64'));
+        if (!verify(null, proof, key, signature) || !verify(null, binding, key, keySignature)) {
+          ws.close(4005, 'identity signature invalid'); return;
+        }
         identity = {
           id: username + '#' + suffix(signingKey), username,
           signingPublicKey: signingKey.toString('base64'),
-          encryptionPublicKey: encryptionKey.toString('base64'), ws
+          encryptionPublicKey: encryptionKey.toString('base64'),
+          encryptionKeySignature: keySignature.toString('base64'), ws
         };
         const old = clients.get(identity.id);
         if (old && old.ws !== ws) old.ws.close(4006, 'replaced by newer session');
@@ -73,7 +86,8 @@ wss.on('connection', ws => {
         knownIdentities.set(identity.id, {
           username: identity.username,
           signingPublicKey: identity.signingPublicKey,
-          encryptionPublicKey: identity.encryptionPublicKey
+          encryptionPublicKey: identity.encryptionPublicKey,
+          encryptionKeySignature: identity.encryptionKeySignature
         });
         authenticated = true;
         clearTimeout(authTimer);
