@@ -34,6 +34,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   List<Map<String, Object?>> _requests = [];
   List<Map<String, Object?>> _recent = [];
   FriendInvite? _myInvite;
+  late final Future<void> _inviteReady;
   bool _loading = true;
 
   @override
@@ -42,7 +43,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _tabs = TabController(length: 2, vsync: this);
     _transport = InternetTransport(identity: widget.identity);
     _incoming = _transport.incomingMessages.listen(_handleIncoming);
-    _loadMyInvite();
+    _inviteReady = _loadMyInvite();
     _refresh();
     _refreshTimer = Timer.periodic(const Duration(seconds: 8), (_) => _refresh());
     _initLinks();
@@ -124,6 +125,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   }
 
   Future<void> _sendControl(String id, String action) async {
+    await _inviteReady;
     final me = _myInvite;
     if (me == null) throw StateError('Your identity card is still loading.');
     final control = ChatMessage(
