@@ -8,7 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../config/relay_config.dart';
-import '../main.dart' show ChatScreen;
+import '../legacy_main.dart' show ChatScreen, SettingsScreen;
 import '../models/chat_message.dart';
 import '../services/friend_invite.dart';
 import '../services/identity_service.dart';
