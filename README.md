@@ -25,7 +25,7 @@ The original chat, onboarding and settings implementation is preserved in `lib/l
 The generated Android runner must include the camera permission and deep-link intent filter shown in `docs/android-manifest-snippet.xml`. App links are not HTTPS verified links; they are a custom scheme handled by the installed app.
 
 ## Existing chat and relay tests
-With the relay running: `cd relay && npm run test:two-clients`.
+With the relay running: `cd relay && npm run test:two-clients`; mesh relay router: `cd relay && npm run test:mesh-router`.
 Flutter tests: `flutter test`.
 
 ## Store-and-forward mesh (foundation in progress)
