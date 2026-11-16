@@ -8,11 +8,16 @@ Android-first, username-based Flutter chat client. Identity is generated on-devi
 - SQLite stores message text and its mood ID.
 - `MoodDetector` is deterministic and replaceable.
 - `MessageTransport` is the seam for future internet, Bluetooth, or mesh adapters. `FakeLocalTransport` is a local no-network placeholder, not cross-device messaging.
-- Mood sounds and backgrounds are optional local assets; see each assets folder README.
+- Mood media is loaded from local assets. The expected filenames and licensing guidance are documented in each assets folder; actual sound and meme files still need to be added.
 
-## Run
+## Run on Android
 1. Install Flutter stable and Android SDK.
-2. Run `flutter pub get`.
-3. Run `flutter run`.
+2. From the repository root, generate the Android runner once: `flutter create --platforms=android .`
+3. Run `flutter pub get`.
+4. Run `flutter run`.
 
-This repository is an offline-first UI and local-storage MVP. Real device-to-device delivery, contact discovery, key verification, and production security review are future work.
+## Checks
+- `flutter analyze`
+- `flutter test`
+
+This repository is an offline-first UI and local-storage MVP. Real device-to-device delivery, contact discovery, key verification, media assets, and production security review are future work.
