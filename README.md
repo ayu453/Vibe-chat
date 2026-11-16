@@ -8,9 +8,9 @@ Android-first username-based Flutter chat. User identities are generated on-devi
 3. Merge the camera permission and `vibechat://add` intent-filter from `docs/android-manifest-snippet.xml` into `android/app/src/main/AndroidManifest.xml`.
 4. Run `flutter pub get`.
 5. Start the relay: `cd relay && npm install && npm start`.
-6. Run: `flutter run -t lib/main_friend.dart --dart-define=VIBE_RELAY_URL=ws://10.0.2.2:8787` (Android emulator). Physical phones should use a reachable LAN IP or deployed WSS URL.
+6. Run: `flutter run --dart-define=VIBE_RELAY_URL=ws://10.0.2.2:8787` (Android emulator). Physical phones should use a reachable LAN IP or deployed WSS URL.
 
-The original `lib/main.dart` entrypoint and chat UI are preserved. The friend-request experience is currently launched through `lib/main_friend.dart` so the existing entrypoint can be compared and rolled back without losing the new work.
+The original chat, onboarding and settings implementation is preserved in `lib/legacy_main.dart`; `lib/main.dart` now launches the new friend-first home and reuses the existing onboarding and chat screen.
 
 ## Friend identity and privacy
 - My ID card displays `username#XXXX` and a QR containing the username, Ed25519 signing public key, X25519 encryption public key, the Ed25519 signature binding those keys, and relay URL.
