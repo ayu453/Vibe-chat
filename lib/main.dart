@@ -19,6 +19,14 @@ class VibeChatApp extends StatelessWidget {
       ),
       scaffoldBackgroundColor: const Color(0xFFF7F6FC),
     ),
+    darkTheme: ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF9389ED),
+        brightness: Brightness.dark,
+      ),
+    ),
+    themeMode: ThemeMode.system,
     home: const _FriendAppGate(),
   );
 }

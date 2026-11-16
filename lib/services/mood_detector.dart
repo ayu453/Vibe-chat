@@ -70,12 +70,18 @@ class MoodDetector {
 
   MoodDetectionResult? _detectRules(String original, String value) {
     const emojiRules = <String, String>{
-      '😂🤣😆😹':'funny','😭😢😿':'sad','😱😮😲🤯':'shock','❤️😍🥰😘':'love',
-      '😡🤬😠':'angry','🥳🎉🎊':'party','😅🤦':'oops','👻😨😰':'scary','🥱😴':'bored','🏆🥇':'win',
+      '😂':'funny','🤣':'funny','😆':'funny','😹':'funny',
+      '😭':'sad','😢':'sad','😿':'sad',
+      '😱':'shock','😮':'shock','😲':'shock','🤯':'shock',
+      '❤️':'love','😍':'love','🥰':'love','😘':'love',
+      '😡':'angry','🤬':'angry','😠':'angry',
+      '🥳':'party','🎉':'party','🎊':'party',
+      '😅':'oops','🤦':'oops','👻':'scary','😨':'scary','😰':'scary',
+      '🥱':'bored','😴':'bored','🏆':'win','🥇':'win',
     };
     const emojiConfidence = <String,double>{'funny':.99,'sad':.99,'shock':.98,'love':.98,'angry':.98,'party':.98,'oops':.91,'scary':.96,'bored':.96,'win':.95};
     for (final entry in emojiRules.entries) {
-      if (entry.key.runes.any((rune) => original.runes.contains(rune))) {
+      if (original.contains(entry.key)) {
         return MoodDetectionResult(mood:entry.value,confidence:emojiConfidence[entry.value]!,language:'und',reason:'emoji');
       }
     }

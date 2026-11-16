@@ -139,6 +139,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const SizedBox(height: 14),
                   const Text('Your keypair is generated on this device. Your identity stays local.',
                       textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 22),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                        Text('How Vibe Chat works', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        SizedBox(height: 10),
+                        Text('• Your username creates a Vibe ID. No phone number or account is needed.'),
+                        SizedBox(height: 8),
+                        Text('• Add friends by scanning their QR code or sharing your ID.'),
+                        SizedBox(height: 8),
+                        Text('• Nearby mode can pass encrypted messages between phones that are close to each other.'),
+                        SizedBox(height: 8),
+                        Text('• Carrier mode lets your phone carry encrypted packets for others. Carriers cannot read message text.'),
+                        SizedBox(height: 8),
+                        Text('• Mood detection runs on this phone. Message text is not sent to a cloud mood service.'),
+                      ]),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -724,6 +743,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onChanged:(v){setState(()=>_lowData=v);_saveBool('low_data',v);}),
       SwitchListTile(title: const Text('Reduce motion'), subtitle: const Text('Use instant background changes'), value:_reduceMotion,
         onChanged:(v){setState(()=>_reduceMotion=v);_saveBool('reduce_motion',v);}),
+      ListTile(
+        leading: const Icon(Icons.description_outlined),
+        title: const Text('Media licenses'),
+        subtitle: const Text('Sources and license status for sounds, songs and backgrounds'),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MediaLicensesScreen())),
+      ),
+    ]),
+  );
+}
+
+class MediaLicensesScreen extends StatelessWidget {
+  const MediaLicensesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Media licenses')),
+    body: ListView(padding: const EdgeInsets.all(18), children: const [
+      Text('No third-party sound, song or meme files are bundled in the starter packs.',
+        style: TextStyle(fontWeight: FontWeight.w600)),
+      SizedBox(height: 14),
+      ListTile(title: Text('Meme sound pack'), subtitle: Text('Manifest ready; audio files not yet supplied. Add an original or licensed clip and record its creator, source and license.')),
+      ListTile(title: Text('Calm sound pack'), subtitle: Text('Manifest ready; no audio files supplied.')),
+      ListTile(title: Text('Bollywood-style pack'), subtitle: Text('Use only original compositions or appropriately licensed recordings. No film soundtrack/dialogue clips.')),
+      ListTile(title: Text('Anime-style pack'), subtitle: Text('Use only original compositions or appropriately licensed recordings. No anime soundtrack/dialogue clips.')),
+      ListTile(title: Text('Song snippets'), subtitle: Text('Only original/licensed tracks; playback is limited to ten seconds with reduced volume.')),
+      ListTile(title: Text('Meme backgrounds'), subtitle: Text('Pack manifests are ready; image/GIF files and per-file license records are still required.')),
+      SizedBox(height: 8),
+      Text('Before release, add the exact source URL, creator, license name, attribution text and proof of permission for every media file.'),
     ]),
   );
 }
