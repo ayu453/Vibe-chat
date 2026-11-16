@@ -28,6 +28,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   late final TabController _tabs;
   StreamSubscription<ChatMessage>? _incoming;
   StreamSubscription<Uri>? _links;
+  Timer? _refreshTimer;
   List<Map<String, Object?>> _accepted = [];
   List<Map<String, Object?>> _requests = [];
   List<Map<String, Object?>> _recent = [];
@@ -42,6 +43,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _incoming = _transport.incomingMessages.listen(_handleIncoming);
     _loadMyInvite();
     _refresh();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 8), (_) => _refresh());
     _initLinks();
   }
 
@@ -229,6 +231,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _tabs.dispose();
     _incoming?.cancel();
     _links?.cancel();
+    _refreshTimer?.cancel();
     _transport.dispose();
     super.dispose();
   }
