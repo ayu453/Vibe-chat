@@ -128,8 +128,22 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
 
   Future<void> _openInviteText(String text) async {
     try {
-      final idMatch = RegExp(r'^[A-Za-z0-9_]{3,20}#[A-Fa-f0-9]{4}
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('FormatException: ', ''))));
+      final trimmed = text.trim();
+      final idMatch = RegExp(r'^[A-Za-z0-9_]{3,20}#[A-Fa-f0-9]{4}$').firstMatch(trimmed);
+      final normalizedId = trimmed.replaceFirstMapped(
+        RegExp(r'#[a-fA-F0-9]{4}$'), (match) => match[0]!.toUpperCase());
+      final invite = idMatch != null
+          ? await _transport.resolveInvite(normalizedId)
+          : FriendInvite.parse(trimmed);
+      if (invite == null) {
+        throw const FormatException('That Vibe ID is not known to this relay yet. Ask them to open Vibe Chat once, or use their QR/link.');
+      }
+      await _confirmInvite(invite);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error.toString().replaceFirst('FormatException: ', ''))));
+      }
     }
   }
 
@@ -243,8 +257,10 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
             subtitle: Text(changed ? 'Public key changed — confirmation required' :
               last.isEmpty ? c['id']! as String : last.first['body']! as String, maxLines: 1, overflow: TextOverflow.ellipsis),
             onTap: changed ? null : () => _openChat(c),
-            trailing: PopupMenuButton<String>(onSelected: (v) => v == 'block' ? _block(c['id']! as String) : _delete(c['id']! as String),
-              itemBuilder: (_) => const [PopupMenuItem(value: 'block', child: Text('Block')), PopupMenuItem(value: 'delete', child: Text('Delete contact'))]),
+            trailing: changed
+              ? IconButton(tooltip: 'Confirm changed key', icon: const Icon(Icons.verified_user_outlined), onPressed: () => _confirmChangedKey(c))
+              : PopupMenuButton<String>(onSelected: (v) => v == 'block' ? _block(c['id']! as String) : _delete(c['id']! as String),
+                  itemBuilder: (_) => const [PopupMenuItem(value: 'block', child: Text('Block')), PopupMenuItem(value: 'delete', child: Text('Delete contact'))]),
           );
         }).toList()),
       _requests.isEmpty ? const Center(child: Text('No friend requests.')) :
@@ -252,9 +268,11 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
           leading: const CircleAvatar(child: Icon(Icons.person_outline)),
           title: Text(c['username']! as String),
           subtitle: Text('${c['id']} • ${c['direction']}'),
-          trailing: c['direction'] == 'incoming'
-            ? FilledButton(onPressed: () => _accept(c), child: const Text('Accept'))
-            : const Text('Pending'),
+          trailing: (c['key_changed'] as int? ?? 0) == 1
+            ? IconButton(tooltip: 'Confirm changed key', icon: const Icon(Icons.verified_user_outlined), onPressed: () => _confirmChangedKey(c))
+            : c['direction'] == 'incoming'
+              ? FilledButton(onPressed: () => _accept(c), child: const Text('Accept'))
+              : const Text('Pending'),
         )).toList()),
     ]),
     floatingActionButton: FloatingActionButton.extended(onPressed: _addFriend,
