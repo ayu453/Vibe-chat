@@ -47,7 +47,7 @@ class MeshGatewayService {
           contact['status'] == 'blocked') continue;
       final tags = await RouteTagService.forContact(
         identity: identity,
-        contactEncryptionPublicKey: freshContact['encryption_public_key']! as String,
+        contactEncryptionPublicKey: contact['encryption_public_key']! as String,
       ).then((service) => service.subscriptionTags(DateTime.now(), senderId: contact['id']! as String, recipientId: identity.displayId));
       for (final tag in tags) {
         next[tag] = contact;
@@ -114,8 +114,11 @@ class MeshGatewayService {
         isOutgoing: false,
         status: 'delivered',
       );
-      await _db.insertMessage(message);
-      transport.emitMeshMessage(message);
+      final existingMessages = await _db.messagesFor(id);
+      if (!existingMessages.any((item) => item.id == message.id)) {
+        await _db.insertMessage(message);
+        transport.emitMeshMessage(message);
+      }
       final receiptCiphertext = await _crypto.encryptReceipt(
         identity: identity,
         recipientEncryptionPublicKey: freshContact['encryption_public_key']! as String,
@@ -123,7 +126,7 @@ class MeshGatewayService {
       );
       final route = await RouteTagService.forContact(
         identity: identity,
-        contactEncryptionPublicKey: contact['encryption_public_key']! as String,
+        contactEncryptionPublicKey: freshContact['encryption_public_key']! as String,
       );
       final now = DateTime.now().millisecondsSinceEpoch;
       final receiptRandom = List<int>.generate(16, (_) => Random.secure().nextInt(256))

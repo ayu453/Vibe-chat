@@ -371,6 +371,8 @@ class InternetTransport implements MessageTransport {
   Future<void> dispose() async {
     _disposed = true;
     _reconnectTimer?.cancel();
+    _meshFlushTimer?.cancel();
+    _meshFlushTimer = null;
     await _subscription?.cancel();
     await _channel?.sink.close();
     await _incoming.close();
