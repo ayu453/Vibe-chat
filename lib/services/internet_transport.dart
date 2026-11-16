@@ -11,6 +11,7 @@ import 'message_crypto.dart';
 import 'message_transport.dart';
 import 'friend_invite.dart';
 import 'local_database.dart';
+import 'friend_request_policy.dart';
 
 class InternetTransport implements MessageTransport {
   InternetTransport({required this.identity, String relayUrl = RelayConfig.relayUrl})
@@ -160,8 +161,10 @@ class InternetTransport implements MessageTransport {
       'encryptionPublicKey': packet['senderEncryptionPublicKey'],
       'encryptionKeySignature': packet['senderEncryptionKeySignature'],
     });
-    if (await _db.isBlocked(sender)) return;
     final known = await _db.contact(sender);
+    if (FriendRequestPolicy.shouldDropEnvelope(
+        status: known?['status'] as String?,
+        keyChanged: (known?['key_changed'] as int? ?? 0) == 1)) return;
     if (known != null) {
       final changed = known['signing_public_key'] != packet['senderSigningPublicKey'] ||
           known['encryption_public_key'] != packet['senderEncryptionPublicKey'];
