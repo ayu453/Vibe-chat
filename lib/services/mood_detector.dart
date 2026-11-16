@@ -39,9 +39,9 @@ class MoodDetector {
 
   MoodDetectionResult detectDetailed(String text, {List<String> recentMessages = const []}) {
     final value = _normalize(text);
-    if (value.isEmpty) return const MoodDetectionResult(mood:'neutral', confidence:0, language:'und', reason:'empty');
     final rule = _detectRules(text, value);
     if (rule != null) return _applyContext(rule, recentMessages);
+    if (value.isEmpty) return const MoodDetectionResult(mood:'neutral', confidence:0, language:'und', reason:'empty');
     var bestMood = 'neutral', bestLanguage = 'und';
     var bestScore = 0.0, secondScore = 0.0;
     for (final languageEntry in _lexicons.entries) {

@@ -33,7 +33,10 @@
     "oops": [
       "sound_packs/meme/oops_fahhh.mp3"
     ],
-    "neutral": []
+    "neutral": [],
+    "fail": [
+      "sound_packs/meme/oops_fahhh.mp3"
+    ]
   },
-  "songs": []
+  "songs": {}
 }

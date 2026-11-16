@@ -447,6 +447,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (prefs.getBool('backgrounds_on') != false && mounted) setState(() => _backgroundMood = mood);
     if (playSound && mood != 'neutral') {
       await _media.play(soundId ?? mood, conversationId: widget.conversationId);
+    } else {
+      await _media.stop();
     }
   }
 

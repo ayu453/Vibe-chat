@@ -24,7 +24,13 @@ class MoodMediaService {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool('sounds_on') == false ||
         prefs.getBool('muted') == true ||
-        prefs.getBool('dnd_on') == true) return;
+        prefs.getBool('dnd_on') == true) {
+      await stop();
+      return;
+    }
+    _songTimer?.cancel();
+    await _songPlayer.stop();
+    await _player.stop();
     if (conversationId != null) {
       if (prefs.getBool('chat_mute_$conversationId') == true) return;
       importantOnly = importantOnly || (prefs.getBool('chat_important_$conversationId') ?? false);
@@ -39,15 +45,17 @@ class MoodMediaService {
     if (_lastPlayedAt != null && now.difference(_lastPlayedAt!) < const Duration(seconds: 2)) return;
 
     final pack = prefs.getString('sound_pack') ?? 'meme';
+    final songClips = await _songsFor(pack, moodId);
+    if (songClips.isNotEmpty) {
+      await playSongSnippet(songClips[_random.nextInt(songClips.length)]);
+      return;
+    }
     final clips = await _clipsFor(pack, moodId);
     if (clips.isEmpty) return;
     final alternatives = clips.where((clip) => clip != _lastClipByMood[moodId]).toList();
     final pool = alternatives.isEmpty ? clips : alternatives;
     final clip = pool[_random.nextInt(pool.length)];
 
-    _songTimer?.cancel();
-    await _songPlayer.stop();
-    await _player.stop();
     await _player.setVolume((prefs.getDouble('volume') ?? 0.7).clamp(0.0, 1.0).toDouble());
     try {
       await _player.play(AssetSource(clip));
@@ -55,6 +63,18 @@ class MoodMediaService {
       _lastPlayedAt = now;
     } catch (_) {
       // Missing optional/licensed media never blocks messaging.
+    }
+  }
+
+  Future<List<String>> _songsFor(String pack, String mood) async {
+    try {
+      final raw = await _bundle.loadString('assets/sound_packs/$pack/manifest.json');
+      final manifest = jsonDecode(raw) as Map<String, dynamic>;
+      final songs = manifest['songs'] as Map<String, dynamic>? ?? {};
+      return (songs[mood] as List<dynamic>? ?? const [])
+          .whereType<String>().where((path) => path.trim().isNotEmpty).toList();
+    } catch (_) {
+      return const [];
     }
   }
 
