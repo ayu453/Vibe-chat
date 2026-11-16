@@ -50,6 +50,8 @@ wss.on('connection', ws => {
   let authenticated = false;
   let identity = null;
   const rate = [];
+  const meshRate = [];
+  let meshUploadToken = null;
   const authTimer = setTimeout(() => {
     if (!authenticated) ws.close(4001, 'authentication timeout');
   }, 10_000);
@@ -116,9 +118,13 @@ wss.on('connection', ws => {
 
     if (packet.type === 'mesh_subscribe') {
       const tags = Array.isArray(packet.tags) ? packet.tags : [];
-      const result = meshRouter.subscribe(ws, tags, now);
-      send(ws, { type: 'mesh_subscribed', count: result.count });
-      for (const envelope of result.envelopes) send(ws, { type: 'mesh_envelope', envelope });
+      try {
+        const result = meshRouter.subscribe(ws, tags, now);
+        send(ws, { type: 'mesh_subscribed', count: result.count });
+        for (const envelope of result.envelopes) send(ws, { type: 'mesh_envelope', envelope });
+      } catch {
+        send(ws, { type: 'error', code: 'INVALID_MESH_SUBSCRIPTION' });
+      }
       return;
     }
     if (packet.type === 'mesh_publish') {
