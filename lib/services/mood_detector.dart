@@ -7,7 +7,7 @@ class MoodDetector {
   String detect(String text) {
     final value = text.toLowerCase();
     if (_has(value, ['😂', '🤣', 'lol', 'haha', 'lmao', ' मज़ाक', 'joke'])) return 'funny';
-    if (_has(value, ['😢', '😭', 'sad', 'cry', 'miss you', ' दुख'])) return 'sad';
+    if (_has(value, ['😢', '😭', 'sad', 'cry', ' दुख'])) return 'sad';
     if (_has(value, ['😱', '😮', '😲', 'wow', 'what?!', 'omg', 'shocked'])) return 'shock';
     if (_has(value, ['🏆', '🎉', ' जीत', 'won', 'winner', 'congrats', 'समझ गया'])) return 'win';
     if (_has(value, ['❤️', '😍', '🥰', 'love', ' प्यार', 'miss u'])) return 'love';
