@@ -14,6 +14,7 @@ import '../services/friend_invite.dart';
 import '../services/identity_service.dart';
 import '../services/internet_transport.dart';
 import '../services/local_database.dart';
+import '../services/friend_request_policy.dart';
 
 class FriendHomeScreen extends StatefulWidget {
   const FriendHomeScreen({super.key, required this.identity});
@@ -199,6 +200,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   }
 
   Future<void> _accept(Map<String, Object?> contact) async {
+    if (!FriendRequestPolicy.canAccept(status: contact['status']! as String, direction: contact['direction']! as String)) return;
     final id = contact['id']! as String;
     await _db.setContactStatus(id, 'accepted');
     try { await _sendControl(id, 'accepted'); } catch (_) {}
@@ -226,7 +228,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   }
 
   void _openChat(Map<String, Object?> contact) {
-    if ((contact['key_changed'] as int? ?? 0) == 1) {
+    if (!FriendRequestPolicy.canOpenChat(status: contact['status']! as String,
+        keyChanged: (contact['key_changed'] as int? ?? 0) == 1)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Confirm the changed key before opening this chat.')));
       return;
     }
