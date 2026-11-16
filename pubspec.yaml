@@ -21,6 +21,7 @@ dependencies:
   app_links: ^6.1.4
   nearby_connections: ^4.3.0
   permission_handler: ^11.3.1
+  battery_plus: ^6.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

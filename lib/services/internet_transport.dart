@@ -32,6 +32,8 @@ class InternetTransport implements MessageTransport {
   Completer<String>? _meshTokenWaiter;
   bool _flushingMesh = false;
   Future<void> _meshPublishChain = Future<void>.value();
+  final Set<String> _meshSubscribedTags = {};
+  Future<void> _meshPublishChain = Future<void>.value();
   final Set<String> _uploadedMeshIds = {};
   final _lookups = <String, Completer<Map<String, dynamic>?>>{};
   WebSocketChannel? _channel;
@@ -50,7 +52,10 @@ class InternetTransport implements MessageTransport {
   Future<void> subscribeMeshTags(Iterable<String> tags) async {
     await _ready?.future.timeout(const Duration(seconds: 12));
     if (_channel == null) throw StateError('Relay is not connected');
-    _sendPacket({'type': 'mesh_subscribe', 'tags': tags.toSet().toList()});
+    _meshSubscribedTags
+      ..clear()
+      ..addAll(tags.toSet());
+    _sendPacket({'type': 'mesh_subscribe', 'tags': _meshSubscribedTags.toList()});
   }
 
   Future<String> _takeMeshToken() async {
@@ -155,6 +160,9 @@ class InternetTransport implements MessageTransport {
           _attempt = 0;
           _uploadedMeshIds.clear();
           if (!(_ready?.isCompleted ?? true)) _ready!.complete();
+          if (_meshSubscribedTags.isNotEmpty) {
+            _sendPacket({'type': 'mesh_subscribe', 'tags': _meshSubscribedTags.toList()});
+          }
           break;
         case 'lookup_result':
           final completer = _lookups.remove(packet['requestId']);

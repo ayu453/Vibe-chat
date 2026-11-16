@@ -17,6 +17,7 @@ import '../services/local_database.dart';
 import '../services/friend_request_policy.dart';
 import 'mesh_debug_screen.dart';
 import '../services/mesh_gateway_service.dart';
+import '../services/nearby_mesh_transport.dart';
 
 class FriendHomeScreen extends StatefulWidget {
   const FriendHomeScreen({super.key, required this.identity});
@@ -29,6 +30,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   final _db = LocalDatabase();
   late final InternetTransport _transport;
   late final MeshGatewayService _meshGateway;
+  late final NearbyMeshTransport _nearbyMesh;
   late final TabController _tabs;
   StreamSubscription<ChatMessage>? _incoming;
   StreamSubscription<Uri>? _links;
@@ -45,6 +47,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _transport = InternetTransport(identity: widget.identity);
+    _nearbyMesh = NearbyMeshTransport();
     _meshGateway = MeshGatewayService(identity: widget.identity, transport: _transport);
     unawaited(_meshGateway.start());
     _incoming = _transport.incomingMessages.listen(_handleIncoming);
@@ -257,6 +260,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _links?.cancel();
     _refreshTimer?.cancel();
     _meshGateway.dispose();
+    _nearbyMesh.dispose();
     _transport.dispose();
     super.dispose();
   }
@@ -269,7 +273,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
         IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
         IconButton(tooltip: 'Mesh debug', icon: const Icon(Icons.hub_outlined),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MeshDebugScreen()))),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MeshDebugScreen(transport: _nearbyMesh)))),
         IconButton(tooltip: 'My ID card', icon: const Icon(Icons.qr_code_2),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyIdCardScreen(identity: widget.identity, invite: _myInvite)))),
         IconButton(tooltip: 'Add friend', icon: const Icon(Icons.person_add_alt_1), onPressed: _addFriend),

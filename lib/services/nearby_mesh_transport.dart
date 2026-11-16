@@ -162,11 +162,10 @@ class NearbyMeshTransport {
   }
 
   Future<void> stop() async {
-    if (!_running) return;
     _running = false;
-    await _nearby.stopDiscovery();
-    await _nearby.stopAdvertising();
-    await _nearby.stopAllEndpoints();
+    try { await _nearby.stopDiscovery(); } catch (_) {}
+    try { await _nearby.stopAdvertising(); } catch (_) {}
+    try { await _nearby.stopAllEndpoints(); } catch (_) {}
     _endpoints.clear();
     _inFlight.clear();
   }
