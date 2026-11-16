@@ -19,7 +19,7 @@ void main() {
     final tampered = FriendInvite.fromIdentity(username: 'reader',
       signingPublicKey: invite.signingPublicKey, encryptionPublicKey: base64Encode(List<int>.filled(32, 9)),
       encryptionKeySignature: invite.encryptionKeySignature, relayUrl: invite.relayUrl);
-    expect(tampered.verify, throwsA(isA<FormatException>()));
+    expect(tampered.verify(), throwsA(isA<FormatException>()));
   });
 
   test('plain ID cannot be accepted as a verified invite', () {
