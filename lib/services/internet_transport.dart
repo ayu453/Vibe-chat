@@ -11,10 +11,9 @@ import 'message_crypto.dart';
 import 'message_transport.dart';
 
 class InternetTransport implements MessageTransport {
-  InternetTransport({required this.identity, required this.peerId, String relayUrl = RelayConfig.relayUrl})
+  InternetTransport({required this.identity, String relayUrl = RelayConfig.relayUrl})
       : _relayUrl = relayUrl { _connect(); }
   final LocalIdentity identity;
-  final String peerId;
   final String _relayUrl;
   final _crypto = MessageCrypto();
   final _incoming = StreamController<ChatMessage>.broadcast();
@@ -162,14 +161,14 @@ class InternetTransport implements MessageTransport {
   Future<void> send(ChatMessage message) async {
     await _ready?.future.timeout(const Duration(seconds: 12));
     if (_channel == null || _ready == null || !_ready!.isCompleted) throw StateError('Relay is not connected');
-    final peerKey = await _lookupPeer(peerId);
+    final peerKey = await _lookupPeer(message.conversationId);
     if (peerKey == null) throw StateError('Recipient has not registered with this relay yet');
     final ciphertext = await _crypto.encrypt(identity: identity, recipientPublicKey: peerKey, payload: {
       'text': message.body, 'moodId': message.moodId,
       'soundId': message.soundId, 'createdAt': message.createdAt.toIso8601String(),
     });
     _sendPacket({'type': 'message', 'envelope': {
-      'id': message.id, 'to': peerId, 'from': identity.displayId,
+      'id': message.id, 'to': message.conversationId, 'from': identity.displayId,
       'ciphertext': ciphertext, 'ttl': 86400000,
     }});
   }

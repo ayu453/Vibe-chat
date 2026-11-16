@@ -156,11 +156,30 @@ class _ChatListScreenState extends State<ChatListScreen> {
   final _db = LocalDatabase();
   List<Map<String, Object?>> _recent = [];
   final _contacts = <String, String>{};
+  late final InternetTransport _transport;
+  StreamSubscription<ChatMessage>? _incomingSubscription;
+  StreamSubscription<MessageStatusUpdate>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
+    _transport = InternetTransport(identity: widget.identity);
+    _incomingSubscription = _transport.incomingMessages.listen((message) async {
+      await _db.insertMessage(message);
+      await _refresh();
+    });
+    _statusSubscription = _transport.statusUpdates.listen((update) {
+      _db.updateStatus(update.messageId, update.status);
+    });
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _incomingSubscription?.cancel();
+    _statusSubscription?.cancel();
+    _transport.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -207,6 +226,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       MaterialPageRoute(
         builder: (_) => ChatScreen(
           identity: widget.identity,
+          transport: _transport,
           conversationId: id,
           contactName: name,
         ),
@@ -292,10 +312,12 @@ class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
     required this.identity,
+    required this.transport,
     required this.conversationId,
     required this.contactName,
   });
   final LocalIdentity identity;
+  final InternetTransport transport;
   final String conversationId;
   final String contactName;
   @override
@@ -304,7 +326,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _db = LocalDatabase();
-  late final InternetTransport _transport;
+  InternetTransport get _transport => widget.transport;
   final _moods = MoodDetector();
   final _media = MoodMediaService();
   final _input = TextEditingController();
@@ -317,7 +339,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _transport = InternetTransport(identity: widget.identity, peerId: widget.conversationId);
     _load();
     _subscription = _transport.incomingMessages.listen(_receive);
     _statusSubscription = _transport.statusUpdates.listen(_updateMessageStatus);
@@ -402,7 +423,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _subscription?.cancel();
     _statusSubscription?.cancel();
-    _transport.dispose();
     _media.dispose();
     _input.dispose();
     _scroll.dispose();
