@@ -23,6 +23,8 @@ void main() {
     final result = MeshSimulator().run(envelope: packet(), nowMs: now);
     expect(result.path, ['A', 'B', 'C', 'D', 'E']);
     expect(result.reachedGateway, isTrue);
+    expect(result.reachedRelay, isTrue);
+    expect(result.reachedRecipient, isTrue);
     expect(result.uploadedIds, [packet().id]);
   });
 

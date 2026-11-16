@@ -23,6 +23,7 @@ class NearbyMeshTransport {
   final Set<String> _endpoints = {};
   final Set<String> _inFlight = {};
   bool _running = false;
+  Timer? _discoveryDutyTimer;
   bool _disposed = false;
 
   bool get isRunning => _running;
@@ -65,22 +66,42 @@ class NearbyMeshTransport {
         onConnectionResult: _onConnectionResult,
         onDisconnected: _onDisconnected,
       );
-      final discovery = await _nearby.startDiscovery(
-        _displayName,
-        Strategy.P2P_CLUSTER,
-        serviceId: _serviceId,
-        onEndpointFound: _onEndpointFound,
-        onEndpointLost: (id) {
-          if (id != null) _endpoints.remove(id);
-        },
-      );
+      final discovery = await _startDiscovery();
       _running = advertising && discovery;
       if (!_running) throw StateError('Nearby advertising or discovery could not start');
+      _scheduleDiscoveryDutyCycle();
       return true;
     } catch (_) {
       await stop();
       rethrow;
     }
+  }
+
+  Future<bool> _startDiscovery() => _nearby.startDiscovery(
+    _displayName,
+    Strategy.P2P_CLUSTER,
+    serviceId: _serviceId,
+    onEndpointFound: _onEndpointFound,
+    onEndpointLost: (id) {
+      if (id != null) _endpoints.remove(id);
+    },
+  );
+
+  void _scheduleDiscoveryDutyCycle() {
+    _discoveryDutyTimer?.cancel();
+    _discoveryDutyTimer = Timer(const Duration(seconds: 15), () async {
+      if (!_running) return;
+      try { await _nearby.stopDiscovery(); } catch (_) {}
+      _discoveryDutyTimer = Timer(const Duration(seconds: 45), () async {
+        if (!_running) return;
+        try {
+          await _startDiscovery();
+          _scheduleDiscoveryDutyCycle();
+        } catch (_) {
+          _scheduleDiscoveryDutyCycle();
+        }
+      });
+    });
   }
 
   void _onConnectionInitiated(String id, ConnectionInfo info) {
@@ -168,6 +189,8 @@ class NearbyMeshTransport {
 
   Future<void> stop() async {
     _running = false;
+    _discoveryDutyTimer?.cancel();
+    _discoveryDutyTimer = null;
     try { await _nearby.stopDiscovery(); } catch (_) {}
     try { await _nearby.stopAdvertising(); } catch (_) {}
     try { await _nearby.stopAllEndpoints(); } catch (_) {}

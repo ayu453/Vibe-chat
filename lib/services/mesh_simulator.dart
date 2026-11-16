@@ -4,12 +4,16 @@ import 'mesh_store.dart';
 class MeshSimulationResult {
   const MeshSimulationResult({
     required this.reachedGateway,
+    required this.reachedRelay,
+    required this.reachedRecipient,
     required this.uploadedIds,
     required this.duplicateRejected,
     required this.expiredRejected,
     required this.path,
   });
   final bool reachedGateway;
+  final bool reachedRelay;
+  final bool reachedRecipient;
   final List<String> uploadedIds;
   final bool duplicateRejected;
   final bool expiredRejected;
@@ -62,6 +66,9 @@ class MeshSimulator {
     }
     return MeshSimulationResult(
       reachedGateway: uploaded.contains(envelope.id),
+      reachedRelay: uploaded.contains(envelope.id),
+      reachedRecipient: uploaded.contains(envelope.id) &&
+          gateway.any((e) => e.id == envelope.id && e.tag == envelope.tag),
       uploadedIds: uploaded,
       duplicateRejected: duplicateRejected,
       expiredRejected: expiredRejected,

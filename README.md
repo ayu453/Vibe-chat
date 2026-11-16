@@ -34,7 +34,7 @@ Flutter tests: `flutter test`.
 - The relay mesh router stores opaque envelopes in RAM (20 MB cap), rejects duplicates and expired packets, and enforces 32 KiB, 48-hour, 8-hop, 6-copy and per-peer rate limits. Relay memory is volatile and is not a durable backup.
 - SQLite outbox support and a deterministic A-B-C-D-E simulator are included as a foundation. The simulator is not a Bluetooth radio test.
 - Android nearby radio discovery/transport is wired through the Android-only Nearby Connections plugin; Android permissions are listed in `docs/android-manifest-snippet.xml`. Carrier mode is enabled by default when the Mesh Debug screen is opened, can be switched off, and can be restricted to charging. It still requires two-physical-device testing and a generated Android runner. iOS support is not claimed.
-- The nearby carrier service is opt-in and does not start automatically. Background/foreground-service scheduling, battery telemetry/UI controls, recipient-side tag subscriptions/decryption, and encrypted receipt envelopes remain follow-up integration work.
+- Nearby discovery uses a 15-second scan / 45-second pause duty cycle while advertising remains available. The carrier screen reads battery level/state, pauses below 15%, and supports carry-only-while-charging. Background/foreground-service scheduling and real device testing remain follow-up work.
 - A five-node simulation proves protocol flow only; it does not guarantee real-world range, delivery time or delivery success.
 
 ## Architecture notes and limitations

@@ -171,6 +171,8 @@ class _MeshDebugScreenState extends State<MeshDebugScreen> {
         const SizedBox(height: 20),
         _resultRow('Path', _result!.path.join(' → ')),
         _resultRow('Reached internet gateway', _result!.reachedGateway ? 'Yes' : 'No'),
+        _resultRow('Reached relay', _result!.reachedRelay ? 'Yes' : 'No'),
+        _resultRow('Reached recipient tag', _result!.reachedRecipient ? 'Yes' : 'No'),
         _resultRow('Uploaded envelope IDs', _result!.uploadedIds.length.toString()),
         _resultRow('Duplicate rejected', _result!.duplicateRejected ? 'Yes' : 'No'),
         _resultRow('Expired packet rejected', _result!.expiredRejected ? 'Yes' : 'No'),

@@ -32,7 +32,7 @@ class RouteTagService {
     required String senderId,
     required String recipientId,
   }) {
-    final utc = DateTime.utc(day.year, day.month, day.day);
+    final utc = day.toUtc();
     final dayLabel = '${utc.year.toString().padLeft(4, '0')}-'
         '${utc.month.toString().padLeft(2, '0')}-'
         '${utc.day.toString().padLeft(2, '0')}';
