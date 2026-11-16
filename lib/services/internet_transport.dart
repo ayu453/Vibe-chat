@@ -202,10 +202,16 @@ class InternetTransport implements MessageTransport {
   Future<void> send(ChatMessage message) async {
     await _ready?.future.timeout(const Duration(seconds: 12));
     if (_channel == null || _ready == null || !_ready!.isCompleted) throw StateError('Relay is not connected');
-    final peerKey = await _lookupPeer(message.conversationId);
-    if (peerKey == null) throw StateError('Recipient has not registered with this relay yet');
+    final peerInvite = await resolveInvite(message.conversationId);
+    final peerKey = peerInvite?.encryptionPublicKey;
+    if (peerInvite == null || peerKey == null) throw StateError('Recipient has not registered with this relay yet');
     final known = await _db.contact(message.conversationId);
-    if (known != null && ((known['key_changed'] as int? ?? 0) == 1 || known['encryption_public_key'] != peerKey)) {
+    if (known != null && (known['key_changed'] as int? ?? 0) == 1) {
+      throw StateError('Contact key changed. Confirm the new key before sending.');
+    }
+    if (known != null && (known['encryption_public_key'] != peerKey || known['signing_public_key'] != peerInvite.signingPublicKey)) {
+      await _db.markContactKeyChanged(message.conversationId, signingPublicKey: peerInvite.signingPublicKey,
+        encryptionPublicKey: peerInvite.encryptionPublicKey, encryptionKeySignature: peerInvite.encryptionKeySignature);
       throw StateError('Contact key changed. Confirm the new key before sending.');
     }
     if (known != null && known['status'] == 'blocked') throw StateError('This contact is blocked.');
