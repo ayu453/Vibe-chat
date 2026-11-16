@@ -39,6 +39,7 @@ class InternetTransport implements MessageTransport {
   StreamSubscription<dynamic>? _subscription;
   Completer<void>? _ready;
   Timer? _reconnectTimer;
+  Timer? _meshFlushTimer;
   bool _disposed = false;
   int _attempt = 0;
 
@@ -133,6 +134,8 @@ class InternetTransport implements MessageTransport {
     _subscription = null;
     _attempt = min(_attempt + 1, 8);
     _reconnectTimer?.cancel();
+    _meshFlushTimer?.cancel();
+    _meshFlushTimer = null;
     _reconnectTimer = Timer(Duration(seconds: min(30, pow(2, _attempt).toInt())), _connect);
   }
 
@@ -167,6 +170,9 @@ class InternetTransport implements MessageTransport {
         case 'authenticated':
           _attempt = 0;
           _uploadedMeshIds.clear();
+          _meshFlushTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+            unawaited(_flushMeshOutbox());
+          });
           if (!(_ready?.isCompleted ?? true)) _ready!.complete();
           if (_meshSubscribedTags.isNotEmpty) {
             _sendPacket({'type': 'mesh_subscribe', 'tags': _meshSubscribedTags.toList()});

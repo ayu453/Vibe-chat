@@ -80,7 +80,10 @@ class MeshGatewayService {
     final id = contact['id']! as String;
     final freshContact = await _db.contact(id);
     if (freshContact == null || freshContact['status'] != 'accepted' ||
-        (freshContact['key_changed'] as int? ?? 0) == 1) return;
+        (freshContact['key_changed'] as int? ?? 0) == 1) {
+      await _outbox.remove(envelope.id);
+      return;
+    }
     try {
       await _outbox.store(envelope);
       final payload = await _crypto.decryptAndVerify(
