@@ -98,6 +98,13 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
           await _db.markContactKeyChanged(invite.id, signingPublicKey: invite.signingPublicKey,
             encryptionPublicKey: invite.encryptionPublicKey, encryptionKeySignature: invite.encryptionKeySignature);
         } else if (data['action'] == 'request') {
+          final existingContacts = await _db.contacts();
+          final nameCollision = existingContacts.any((item) =>
+              item['username'] == invite.username && item['id'] != invite.id);
+          if (nameCollision && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Warning: same username received with a different Vibe ID.')));
+          }
           await _db.saveContact(id: invite.id, username: invite.username,
             signingPublicKey: invite.signingPublicKey, encryptionPublicKey: invite.encryptionPublicKey,
             encryptionKeySignature: invite.encryptionKeySignature, relayUrl: invite.relayUrl,
@@ -273,11 +280,20 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
           leading: const CircleAvatar(child: Icon(Icons.person_outline)),
           title: Text(c['username']! as String),
           subtitle: Text('${c['id']} • ${c['direction']}'),
-          trailing: (c['key_changed'] as int? ?? 0) == 1
-            ? IconButton(tooltip: 'Confirm changed key', icon: const Icon(Icons.verified_user_outlined), onPressed: () => _confirmChangedKey(c))
-            : c['direction'] == 'incoming'
-              ? FilledButton(onPressed: () => _accept(c), child: const Text('Accept'))
-              : const Text('Pending'),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            if ((c['key_changed'] as int? ?? 0) == 1)
+              IconButton(tooltip: 'Confirm changed key', icon: const Icon(Icons.verified_user_outlined), onPressed: () => _confirmChangedKey(c))
+            else if (c['direction'] == 'incoming')
+              FilledButton(onPressed: () => _accept(c), child: const Text('Accept'))
+            else
+              const Text('Pending'),
+            PopupMenuButton<String>(onSelected: (v) => v == 'block'
+                ? _block(c['id']! as String) : _delete(c['id']! as String),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'block', child: Text('Block')),
+                PopupMenuItem(value: 'delete', child: Text('Delete contact')),
+              ]),
+          ]),
         )).toList()),
     ]),
     floatingActionButton: FloatingActionButton.extended(onPressed: _addFriend,
