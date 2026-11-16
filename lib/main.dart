@@ -189,9 +189,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (value == null || value.isEmpty) return;
     final match = RegExp(r'^([A-Za-z0-9_]{3,20})#([A-Fa-f0-9]{4})$').firstMatch(value);
     if (match == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a Vibe ID in username#XXXX format.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter a Vibe ID in username#XXXX format.')),
+        );
+      }
       return;
     }
     final id = '${match.group(1)}#${match.group(2)!.toUpperCase()}';
@@ -386,11 +388,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _jumpToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) _scroll.animateTo(
-        _scroll.position.maxScrollExtent + 100,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      );
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent + 100,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
