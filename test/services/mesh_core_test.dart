@@ -59,7 +59,7 @@ void main() {
     const tags = RouteTagService([1, 2, 3, 4, 5, 6]);
     final day = DateTime.utc(2026, 11, 16);
     expect(tags.tagForDay(day, senderId: 'alice', recipientId: 'bob'), isNot(tags.tagForDay(day.add(const Duration(days: 1)), senderId: 'alice', recipientId: 'bob')));
-    expect(tags.subscriptionTags(day, senderId: 'alice', recipientId: 'bob'), [tags.tagForDay(day), tags.tagForDay(day.subtract(const Duration(days: 1)), senderId: 'alice', recipientId: 'bob')]);
+    expect(tags.subscriptionTags(day, senderId: 'alice', recipientId: 'bob'), [tags.tagForDay(day, senderId: 'alice', recipientId: 'bob'), tags.tagForDay(day.subtract(const Duration(days: 1)), senderId: 'alice', recipientId: 'bob')]);
   });
 
   test('X25519 contact pair derives matching route tags', () async {
@@ -90,7 +90,7 @@ void main() {
     final b = RouteTagService(List<int>.filled(32, 7));
     final other = RouteTagService(List<int>.filled(32, 8));
     final day = DateTime.utc(2026, 11, 16);
-    expect(a.tagForDay(day), b.tagForDay(day));
+    expect(a.tagForDay(day, senderId: 'alice', recipientId: 'bob'), b.tagForDay(day, senderId: 'alice', recipientId: 'bob'));
     expect(a.tagForDay(day, senderId: 'alice', recipientId: 'bob'), isNot(other.tagForDay(day, senderId: 'alice', recipientId: 'bob')));
   });
 }

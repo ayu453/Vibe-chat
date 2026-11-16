@@ -38,7 +38,10 @@ class NearbyMeshTransport {
       batteryPercent: batteryPercent,
       isCharging: isCharging,
       carryOnlyWhileCharging: carryOnlyWhileCharging,
-    )) return false;
+    )) {
+      await stop();
+      return false;
+    }
     if (_running) return true;
 
     final permissions = await <Permission>[
@@ -53,29 +56,31 @@ class NearbyMeshTransport {
       throw StateError('Nearby permissions were not granted');
     }
 
-    final advertising = await _nearby.startAdvertising(
-      _displayName,
-      Strategy.P2P_CLUSTER,
-      serviceId: _serviceId,
-      onConnectionInitiated: _onConnectionInitiated,
-      onConnectionResult: _onConnectionResult,
-      onDisconnected: _onDisconnected,
-    );
-    final discovery = await _nearby.startDiscovery(
-      _displayName,
-      Strategy.P2P_CLUSTER,
-      serviceId: _serviceId,
-      onEndpointFound: _onEndpointFound,
-      onEndpointLost: (id) {
-        if (id != null) _endpoints.remove(id);
-      },
-    );
-    _running = advertising && discovery;
-    if (!_running) {
+    try {
+      final advertising = await _nearby.startAdvertising(
+        _displayName,
+        Strategy.P2P_CLUSTER,
+        serviceId: _serviceId,
+        onConnectionInitiated: _onConnectionInitiated,
+        onConnectionResult: _onConnectionResult,
+        onDisconnected: _onDisconnected,
+      );
+      final discovery = await _nearby.startDiscovery(
+        _displayName,
+        Strategy.P2P_CLUSTER,
+        serviceId: _serviceId,
+        onEndpointFound: _onEndpointFound,
+        onEndpointLost: (id) {
+          if (id != null) _endpoints.remove(id);
+        },
+      );
+      _running = advertising && discovery;
+      if (!_running) throw StateError('Nearby advertising or discovery could not start');
+      return true;
+    } catch (_) {
       await stop();
-      throw StateError('Nearby advertising or discovery could not start');
+      rethrow;
     }
-    return true;
   }
 
   void _onConnectionInitiated(String id, ConnectionInfo info) {

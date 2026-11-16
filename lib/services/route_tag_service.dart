@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/cryptography.dart' hide Hmac;
 import 'identity_service.dart';
 
 /// Pairwise, directional daily tags. Direction prevents the sender from
