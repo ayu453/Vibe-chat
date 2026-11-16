@@ -69,19 +69,19 @@ class MoodDetector {
   }
 
   MoodDetectionResult? _detectRules(String original, String value) {
-    const emojiRules = <String, String>{
-      '😂':'funny','🤣':'funny','😆':'funny','😹':'funny',
-      '😭':'sad','😢':'sad','😿':'sad',
-      '😱':'shock','😮':'shock','😲':'shock','🤯':'shock',
-      '❤️':'love','😍':'love','🥰':'love','😘':'love',
-      '😡':'angry','🤬':'angry','😠':'angry',
-      '🥳':'party','🎉':'party','🎊':'party',
-      '😅':'oops','🤦':'oops','👻':'scary','😨':'scary','😰':'scary',
-      '🥱':'bored','😴':'bored','🏆':'win','🥇':'win',
+    const emojiRules = <int, String>{
+      0x1F602:'funny', 0x1F923:'funny', 0x1F606:'funny', 0x1F639:'funny',
+      0x1F62D:'sad', 0x1F622:'sad', 0x1F63F:'sad',
+      0x1F631:'shock', 0x1F62E:'shock', 0x1F632:'shock', 0x1F92F:'shock',
+      0x2764:'love', 0x1F60D:'love', 0x1F970:'love', 0x1F618:'love',
+      0x1F621:'angry', 0x1F92C:'angry', 0x1F620:'angry',
+      0x1F973:'party', 0x1F389:'party', 0x1F38A:'party',
+      0x1F605:'oops', 0x1F926:'oops', 0x1F47B:'scary', 0x1F628:'scary', 0x1F630:'scary',
+      0x1F971:'bored', 0x1F634:'bored', 0x1F3C6:'win', 0x1F947:'win',
     };
     const emojiConfidence = <String,double>{'funny':.99,'sad':.99,'shock':.98,'love':.98,'angry':.98,'party':.98,'oops':.91,'scary':.96,'bored':.96,'win':.95};
     for (final entry in emojiRules.entries) {
-      if (original.contains(entry.key)) {
+      if (original.runes.contains(entry.key)) {
         return MoodDetectionResult(mood:entry.value,confidence:emojiConfidence[entry.value]!,language:'und',reason:'emoji');
       }
     }
