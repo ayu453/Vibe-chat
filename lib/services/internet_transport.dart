@@ -33,7 +33,6 @@ class InternetTransport implements MessageTransport {
   bool _flushingMesh = false;
   Future<void> _meshPublishChain = Future<void>.value();
   final Set<String> _meshSubscribedTags = {};
-  Future<void> _meshPublishChain = Future<void>.value();
   final Set<String> _uploadedMeshIds = {};
   final _lookups = <String, Completer<Map<String, dynamic>?>>{};
   WebSocketChannel? _channel;
