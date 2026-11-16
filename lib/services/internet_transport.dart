@@ -49,13 +49,17 @@ class InternetTransport implements MessageTransport {
   Stream<MeshEnvelope> get meshIncoming => _meshIncoming.stream;
 
   Future<void> subscribeMeshTags(Iterable<String> tags) async {
-    await _ready?.future.timeout(const Duration(seconds: 12));
-    if (_channel == null) throw StateError('Relay is not connected');
     _meshSubscribedTags
       ..clear()
       ..addAll(tags.toSet());
+    await _ready?.future.timeout(const Duration(seconds: 12));
+    if (_channel == null) throw StateError('Relay is not connected');
     _sendPacket({'type': 'mesh_subscribe', 'tags': _meshSubscribedTags.toList()});
   }
+
+  void emitMeshMessage(ChatMessage message) => _incoming.add(message);
+  void emitMeshStatus(String messageId, String status) =>
+      _statuses.add(MessageStatusUpdate(messageId, status));
 
   Future<String> _takeMeshToken() async {
     final available = _meshUploadToken;
@@ -120,6 +124,11 @@ class InternetTransport implements MessageTransport {
     _ready = null;
     _meshUploadToken = null;
     _uploadedMeshIds.clear();
+    final waiter = _meshTokenWaiter;
+    _meshTokenWaiter = null;
+    if (waiter != null && !waiter.isCompleted) {
+      waiter.completeError(StateError('Relay disconnected before mesh token arrived'));
+    }
     _subscription?.cancel();
     _subscription = null;
     _attempt = min(_attempt + 1, 8);
@@ -292,8 +301,10 @@ class InternetTransport implements MessageTransport {
       recipientEncryptionPublicKey: contact['encryption_public_key']! as String,
       message: message,
     );
+    final randomId = List<int>.generate(16, (_) => Random.secure().nextInt(256))
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
     final envelope = MeshEnvelope(
-      id: 'vibe_msg_${message.id}',
+      id: 'mesh_$randomId',
       tag: route.tagForDay(DateTime.now(), senderId: identity.displayId, recipientId: message.conversationId),
       ciphertext: ciphertext,
       createdAt: now,
@@ -302,14 +313,14 @@ class InternetTransport implements MessageTransport {
       copiesLeft: MeshEnvelope.maxCopies,
     );
     await _meshOutbox.store(envelope, nowMs: now);
-    try { await publishMeshEnvelope(envelope); } catch (_) {}
+    if (_channel != null && (_ready?.isCompleted ?? false)) {
+      try { await publishMeshEnvelope(envelope); } catch (_) {}
+    }
     return true;
   }
 
   @override
   Future<void> send(ChatMessage message) async {
-    var meshQueued = false;
-    try { meshQueued = await _queueMeshMessage(message); } catch (_) {}
     try {
       await _ready?.future.timeout(const Duration(seconds: 12));
     if (_channel == null || _ready == null || !_ready!.isCompleted) throw StateError('Relay is not connected');
@@ -335,6 +346,8 @@ class InternetTransport implements MessageTransport {
         'ciphertext': ciphertext, 'ttl': 86400000,
       }});
     } catch (error) {
+      var meshQueued = false;
+      try { meshQueued = await _queueMeshMessage(message); } catch (_) {}
       if (meshQueued) {
         _statuses.add(MessageStatusUpdate(message.id, 'sent'));
         return;

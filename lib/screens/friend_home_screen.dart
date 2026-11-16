@@ -107,6 +107,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
             old['encryption_public_key'] != invite.encryptionPublicKey)) {
           await _db.markContactKeyChanged(invite.id, signingPublicKey: invite.signingPublicKey,
             encryptionPublicKey: invite.encryptionPublicKey, encryptionKeySignature: invite.encryptionKeySignature);
+          unawaited(_meshGateway.refreshSubscriptions());
         } else if (data['action'] == 'request') {
           final existingContacts = await _db.contacts();
           final nameCollision = existingContacts.any((item) =>
@@ -196,6 +197,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
         old['encryption_public_key'] != invite.encryptionPublicKey)) {
       await _db.markContactKeyChanged(invite.id, signingPublicKey: invite.signingPublicKey,
         encryptionPublicKey: invite.encryptionPublicKey, encryptionKeySignature: invite.encryptionKeySignature);
+      unawaited(_meshGateway.refreshSubscriptions());
       await _refresh();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Key changed. Confirm it before messaging.')));
       return;
