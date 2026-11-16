@@ -45,10 +45,13 @@ async function connect(identity) {
   assert.equal(auth.id, identity.id);
   return ws;
 }
+
 const alice = client('alice');
 const bob = client('bob');
 const aliceWs = await connect(alice);
 const bobWs = await connect(bob);
+
+// Online delivery.
 const delivered = nextPacket(bobWs, p => p.type === 'message');
 const deliveredStatus = nextPacket(aliceWs, p => p.type === 'status' && p.status === 'delivered');
 const envelope = {
@@ -64,5 +67,26 @@ assert.equal(received.envelope.ciphertext, envelope.ciphertext);
 assert.equal(received.senderEncryptionPublicKey, alice.encryptionRaw.toString('base64'));
 assert.equal(received.senderEncryptionKeySignature, alice.encryptionKeySignature.toString('base64'));
 assert.equal((await deliveredStatus).status, 'delivered');
-aliceWs.close(); bobWs.close();
-console.log('PASS: two authenticated fake clients exchanged an opaque envelope.');
+
+// Offline queue: recipient disconnects, message stays in RAM, then arrives after reconnect.
+const bobClosed = once(bobWs, 'close');
+bobWs.close();
+await bobClosed;
+const offlineEnvelope = {
+  id: randomBytes(16).toString('hex'), to: bob.id, from: alice.id,
+  ciphertext: Buffer.from('opaque-queued-payload').toString('base64'), ttl: 60000
+};
+const sentStatus = nextPacket(aliceWs, p => p.type === 'status' && p.id === offlineEnvelope.id && p.status === 'sent');
+aliceWs.send(JSON.stringify({ type: 'message', envelope: offlineEnvelope }));
+assert.equal((await sentStatus).status, 'sent');
+const offlineDeliveredStatus = nextPacket(aliceWs,
+  p => p.type === 'status' && p.id === offlineEnvelope.id && p.status === 'delivered');
+const bobReconnected = await connect(bob);
+const queued = await nextPacket(bobReconnected,
+  p => p.type === 'message' && p.envelope.id === offlineEnvelope.id);
+assert.equal(queued.envelope.ciphertext, offlineEnvelope.ciphertext);
+assert.equal((await offlineDeliveredStatus).status, 'delivered');
+
+aliceWs.close();
+bobReconnected.close();
+console.log('PASS: authenticated online delivery and RAM-only offline queue delivery.');
