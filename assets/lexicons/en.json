@@ -16,7 +16,6 @@
       "cry",
       "crying",
       "hurt",
-      "miss you",
       "heartbroken",
       "lonely",
       "upset"
@@ -42,7 +41,8 @@
       "miss you",
       "darling",
       "beautiful",
-      "adore"
+      "adore",
+      "miss you"
     ],
     "angry": [
       "angry",
@@ -57,7 +57,8 @@
       "afraid",
       "creepy",
       "terrifying",
-      "horror"
+      "horror",
+      "scary"
     ],
     "bored": [
       "bored",
