@@ -238,6 +238,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     appBar: AppBar(
       title: const Text('Vibe Chat', style: TextStyle(fontWeight: FontWeight.bold)),
       actions: [
+        IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
         IconButton(tooltip: 'My ID card', icon: const Icon(Icons.qr_code_2),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyIdCardScreen(identity: widget.identity, invite: _myInvite)))),
         IconButton(tooltip: 'Add friend', icon: const Icon(Icons.person_add_alt_1), onPressed: _addFriend),
