@@ -1,4 +1,4 @@
-name: Flutter checks
+name: Flutter and relay checks
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  analyze-and-test:
+  flutter:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,3 +16,14 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd relay && npm install
+      - run: cd relay && npm start > /tmp/vibe-relay.log 2>&1 &
+      - run: cd relay && npm run test:two-clients
