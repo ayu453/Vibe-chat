@@ -3,6 +3,8 @@ import 'package:vibe_chat/models/mesh_envelope.dart';
 import 'package:vibe_chat/services/mesh_simulator.dart';
 import 'package:vibe_chat/services/mesh_store.dart';
 import 'package:vibe_chat/services/route_tag_service.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:vibe_chat/services/identity_service.dart';
 
 void main() {
   const now = 1800000000000;
@@ -49,6 +51,28 @@ void main() {
     final day = DateTime.utc(2026, 11, 16);
     expect(tags.tagForDay(day), isNot(tags.tagForDay(day.add(const Duration(days: 1)))));
     expect(tags.subscriptionTags(day), [tags.tagForDay(day), tags.tagForDay(day.subtract(const Duration(days: 1)))]);
+  });
+
+  test('X25519 contact pair derives matching route tags', () async {
+    final algorithm = X25519();
+    final alicePair = await algorithm.newKeyPair();
+    final bobPair = await algorithm.newKeyPair();
+    final alicePublic = await alicePair.extractPublicKey();
+    final bobPublic = await bobPair.extractPublicKey();
+    final alice = LocalIdentity(
+      username: 'alice', publicKey: 'sign', privateKey: 'private',
+      userId: 'alice-id', encryptionPublicKey: base64Encode(alicePublic.bytes),
+      encryptionPrivateKey: base64Encode(await alicePair.extractPrivateKeyBytes()));
+    final bob = LocalIdentity(
+      username: 'bob', publicKey: 'sign2', privateKey: 'private2',
+      userId: 'bob-id', encryptionPublicKey: base64Encode(bobPublic.bytes),
+      encryptionPrivateKey: base64Encode(await bobPair.extractPrivateKeyBytes()));
+    final a = await RouteTagService.forContact(
+      identity: alice, contactEncryptionPublicKey: bob.encryptionPublicKey);
+    final b = await RouteTagService.forContact(
+      identity: bob, contactEncryptionPublicKey: alice.encryptionPublicKey);
+    final day = DateTime.utc(2026, 11, 16);
+    expect(a.tagForDay(day), b.tagForDay(day));
   });
 
   test('same shared secret yields same tag; different contact secret does not', () {

@@ -15,6 +15,7 @@ import '../services/identity_service.dart';
 import '../services/internet_transport.dart';
 import '../services/local_database.dart';
 import '../services/friend_request_policy.dart';
+import 'mesh_debug_screen.dart';
 
 class FriendHomeScreen extends StatefulWidget {
   const FriendHomeScreen({super.key, required this.identity});
@@ -258,6 +259,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
       actions: [
         IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+        IconButton(tooltip: 'Mesh debug', icon: const Icon(Icons.hub_outlined),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MeshDebugScreen()))),
         IconButton(tooltip: 'My ID card', icon: const Icon(Icons.qr_code_2),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyIdCardScreen(identity: widget.identity, invite: _myInvite)))),
         IconButton(tooltip: 'Add friend', icon: const Icon(Icons.person_add_alt_1), onPressed: _addFriend),
