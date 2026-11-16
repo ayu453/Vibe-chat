@@ -32,8 +32,9 @@ class MeshSimulator {
         final current = nodes[i].inventory(nowMs: nowMs)
             .where((e) => e.id == envelope.id).firstOrNull;
         if (current == null || !current.canForward) break;
-        final next = current.forwarded();
-        if (nodes[i + 1].store(next, nowMs: nowMs)) {
+        final split = current.splitForForward();
+        nodes[i].replace(split.remainingAtSender, nowMs: nowMs);
+        if (nodes[i + 1].store(split.transferred, nowMs: nowMs)) {
           path.add(String.fromCharCode(66 + i));
         }
       }
@@ -42,7 +43,7 @@ class MeshSimulator {
     final uploaded = gateway.where((e) => e.tag == envelope.tag)
         .map((e) => e.id).toList();
     final duplicateRejected = !nodes[4].store(
-      envelope.forwarded(), nowMs: nowMs,
+      envelope.splitForForward().transferred, nowMs: nowMs,
     );
     final expired = MeshEnvelope(
       id: 'expired-envelope-0001',
