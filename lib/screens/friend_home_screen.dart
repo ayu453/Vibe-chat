@@ -138,7 +138,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
   Future<void> _confirmInvite(FriendInvite invite) async {
     await invite.verify();
     if (!mounted) return;
-    final sameName = _accepted.any((c) => c['username'] == invite.username && c['id'] != invite.id);
+    final allContacts = await _db.contacts();\n    final sameName = allContacts.any((c) => c['username'] == invite.username && c['id'] != invite.id);
     final result = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
       title: const Text('Confirm friend'),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -185,7 +185,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     await _refresh();
   }
 
-  Future<void> _delete(String id) async {
+  Future<void> _confirmChangedKey(Map<String, Object?> contact) async {\n    final id = contact['id']! as String;\n    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(\n      title: const Text('Confirm public key change'),\n      content: Text('The encryption key for $id changed. Only continue if you verified this change with the person through another trusted channel.'),\n      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm key'))],\n    ));\n    if (confirmed == true) { await _db.confirmContactKey(id); await _refresh(); }\n  }\n\n  Future<void> _delete(String id) async {
     await _db.deleteContact(id);
     await _refresh();
   }
