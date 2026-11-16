@@ -56,4 +56,5 @@ Flutter tests: `flutter test`.
 - The meme pack reserves an oops_fahhh.mp3 slot for an original/licensed oops sound. Song snippets are limited to ten seconds and played at reduced volume.
 - App settings include mute, app-level Do Not Disturb, quiet hours, receiver pack selection, low-data/battery saver and reduce-motion preferences. Chat-specific mute, important-moods-only and quiet hours are stored locally.
 - Automated language examples are in test/data/mood_samples.json. Run flutter test test/services/mood_detector_multilingual_test.dart to print per-language and total accuracy. This is a curated smoke-test set, not a scientific model benchmark.
-- Android system-level silent/DND state integration, actual licensed media, encrypted local backup/restore, full onboarding polish and accessibility QA remain release tasks; see docs/RELEASE_CHECKLIST.md.
+- Encrypted local backup/restore is implemented with PBKDF2-HMAC-SHA256 and AES-256-GCM; the user saves the file and password themselves. Android system-level silent/DND state integration, actual licensed media, large-text QA and physical-device validation remain release tasks; see docs/RELEASE_CHECKLIST.md.
+- The app follows system dark/light theme. Onboarding explains Vibe ID, QR adding, Nearby and carrier mode; Settings includes media-license status and accessibility/battery options.

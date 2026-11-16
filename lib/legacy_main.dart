@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:share_plus/share_plus.dart';
 import 'models/chat_message.dart';
 import 'services/identity_service.dart';
 import 'services/internet_transport.dart';
@@ -10,6 +13,7 @@ import 'services/local_database.dart';
 import 'services/message_transport.dart';
 import 'services/mood_detector.dart';
 import 'services/mood_media_service.dart';
+import 'services/local_backup_service.dart';
 
 void main() => runApp(const VibeChatApp());
 
@@ -135,6 +139,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Create my Vibe ID'),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: _busy ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupRestoreScreen())),
+                    child: const Text('Restore encrypted backup'),
                   ),
                   const SizedBox(height: 14),
                   const Text('Your keypair is generated on this device. Your identity stays local.',
@@ -744,6 +753,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SwitchListTile(title: const Text('Reduce motion'), subtitle: const Text('Use instant background changes'), value:_reduceMotion,
         onChanged:(v){setState(()=>_reduceMotion=v);_saveBool('reduce_motion',v);}),
       ListTile(
+        leading: const Icon(Icons.backup_outlined),
+        title: const Text('Encrypted local backup'),
+        subtitle: const Text('Export or restore chats and identity keys'),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupRestoreScreen())),
+      ),
+      ListTile(
         leading: const Icon(Icons.description_outlined),
         title: const Text('Media licenses'),
         subtitle: const Text('Sources and license status for sounds, songs and backgrounds'),
@@ -771,6 +786,90 @@ class MediaLicensesScreen extends StatelessWidget {
       ListTile(title: Text('Meme backgrounds'), subtitle: Text('Pack manifests are ready; image/GIF files and per-file license records are still required.')),
       SizedBox(height: 8),
       Text('Before release, add the exact source URL, creator, license name, attribution text and proof of permission for every media file.'),
+    ]),
+  );
+}
+
+class BackupRestoreScreen extends StatefulWidget {
+  const BackupRestoreScreen({super.key});
+  @override
+  State<BackupRestoreScreen> createState() => _BackupRestoreScreenState();
+}
+
+class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
+  final _password = TextEditingController();
+  final _backup = LocalBackupService();
+  bool _busy = false;
+  String? _status;
+
+  @override
+  void dispose() { _password.dispose(); super.dispose(); }
+
+  Future<void> _export() async {
+    setState(() { _busy = true; _status = null; });
+    try {
+      final bytes = await _backup.createBackup(_password.text);
+      await Share.shareXFiles([
+        XFile.fromData(bytes, name: 'vibe-chat-backup.vibe', mimeType: 'application/octet-stream'),
+      ], text: 'Encrypted Vibe Chat backup. Keep your password safe; it cannot be recovered.');
+      if (mounted) setState(() => _status = 'Encrypted backup prepared. Save the file somewhere you control.');
+    } catch (error) {
+      if (mounted) setState(() => _status = error.toString().replaceFirst('ArgumentError: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    setState(() { _busy = true; _status = null; });
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom, allowedExtensions: ['vibe'], withData: true,
+      );
+      if (picked == null || picked.files.isEmpty) return;
+      final bytes = picked.files.single.bytes;
+      if (bytes == null) throw StateError('Could not read the selected backup file.');
+      await _backup.restoreBackup(bytes, _password.text);
+      if (!mounted) return;
+      setState(() => _status = 'Backup restored. Vibe Chat will close so it can reload the restored identity and chats.');
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      await SystemNavigator.pop();
+    } catch (error) {
+      if (mounted) setState(() => _status = error.toString().replaceFirst('ArgumentError: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Encrypted local backup')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('Your chats, contacts and identity keys are encrypted on this device before you save the file. Nothing is uploaded to a cloud service.'),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _password,
+        obscureText: true,
+        decoration: const InputDecoration(
+          labelText: 'Backup password',
+          helperText: 'Use at least 10 characters. The password is not recoverable.',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 18),
+      FilledButton.icon(
+        onPressed: _busy ? null : _export,
+        icon: const Icon(Icons.save_alt),
+        label: const Text('Create encrypted backup'),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : _restore,
+        icon: const Icon(Icons.restore),
+        label: const Text('Restore from backup file'),
+      ),
+      if (_busy) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+      if (_status != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_status!)),
     ]),
   );
 }

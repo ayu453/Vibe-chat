@@ -37,6 +37,38 @@ class LocalDatabase {
     pending_encryption_key_signature TEXT
   )''';
 
+  Future<Map<String, Object?>> exportSnapshot() async {
+    final db = await database;
+    return {
+      'schemaVersion': 3,
+      'messages': await db.query('messages'),
+      'contacts': await db.query('contacts'),
+    };
+  }
+
+  Future<void> restoreSnapshot(Map<String, dynamic> snapshot) async {
+    final messages = snapshot['messages'];
+    final contacts = snapshot['contacts'];
+    if (messages is! List || contacts is! List) {
+      throw const FormatException('Backup chat database is invalid.');
+    }
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('messages');
+      await txn.delete('contacts');
+      for (final row in contacts) {
+        if (row is! Map) throw const FormatException('Backup contact row is invalid.');
+        await txn.insert('contacts', Map<String, Object?>.from(row),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      for (final row in messages) {
+        if (row is! Map) throw const FormatException('Backup message row is invalid.');
+        await txn.insert('messages', Map<String, Object?>.from(row),
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
   Future<void> insertMessage(ChatMessage message) async {
     await (await database).insert('messages', message.toMap(), conflictAlgorithm: ConflictAlgorithm.ignore);
   }
