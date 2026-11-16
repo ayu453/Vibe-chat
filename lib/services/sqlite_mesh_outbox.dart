@@ -74,6 +74,28 @@ class SqliteMeshOutbox {
       jsonDecode(row['payload'] as String) as Map<String, dynamic>)).toList();
   }
 
+  Future<List<MeshEnvelope>> all({int? nowMs}) async {
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    final db = await database;
+    await pruneExpired(nowMs: now);
+    final rows = await db.query('envelopes',
+      where: 'expires_at > ?', whereArgs: [now], orderBy: 'created_at ASC');
+    return rows.map((row) => MeshEnvelope.fromJson(
+      jsonDecode(row['payload'] as String) as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> replace(MeshEnvelope envelope, {int? nowMs}) async {
+    final now = nowMs ?? DateTime.now().millisecondsSinceEpoch;
+    envelope.validate(nowMs: now);
+    final payload = envelope.encode();
+    await (await database).update('envelopes', {
+      'payload': payload,
+      'created_at': envelope.createdAt,
+      'expires_at': envelope.expiresAt,
+      'byte_size': utf8.encode(payload).length,
+    }, where: 'id = ?', whereArgs: [envelope.id]);
+  }
+
   Future<void> remove(String id) async =>
       (await database).delete('envelopes', where: 'id = ?', whereArgs: [id]);
 

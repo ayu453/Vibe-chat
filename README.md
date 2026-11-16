@@ -33,7 +33,8 @@ Flutter tests: `flutter test`.
 - Route tags are HMAC-SHA-256 values derived from the X25519 pairwise shared secret and UTC day. Clients subscribe to today's and yesterday's tags to cover midnight rollover. Never derive tags from public keys.
 - The relay mesh router stores opaque envelopes in RAM (20 MB cap), rejects duplicates and expired packets, and enforces 32 KiB, 48-hour, 8-hop, 6-copy and per-peer rate limits. Relay memory is volatile and is not a durable backup.
 - SQLite outbox support and a deterministic A-B-C-D-E simulator are included as a foundation. The simulator is not a Bluetooth radio test.
-- Real nearby radio discovery/transport, Android foreground/background execution, battery-aware UI settings, recipient-side decrypt/verify and end-to-end receipt envelopes still need integration and device testing. iOS support is not claimed.
+- Android nearby radio discovery/transport is wired through the Android-only Nearby Connections plugin; Android permissions are listed in `docs/android-manifest-snippet.xml`. It still requires two-physical-device testing and a generated Android runner. iOS support is not claimed.
+- The nearby carrier service is opt-in and does not start automatically. Background/foreground-service scheduling, battery telemetry/UI controls, recipient-side tag subscriptions/decryption, and encrypted receipt envelopes remain follow-up integration work.
 - A five-node simulation proves protocol flow only; it does not guarantee real-world range, delivery time or delivery success.
 
 ## Architecture notes and limitations

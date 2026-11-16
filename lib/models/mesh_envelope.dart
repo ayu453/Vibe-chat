@@ -57,10 +57,23 @@ class MeshEnvelope {
     }
   }
 
-  MeshEnvelope forwarded() {
+  MeshForwardSplit splitForForward() {
     if (!canForward) throw StateError('Forwarding budget exhausted');
-    return MeshEnvelope(id: id, tag: tag, ciphertext: ciphertext,
-      createdAt: createdAt, expiresAt: expiresAt,
-      hopCount: hopCount + 1, copiesLeft: copiesLeft - 1);
+    final transferredCopies = copiesLeft == 1 ? 1 : copiesLeft ~/ 2;
+    final remainingCopies = copiesLeft - transferredCopies;
+    return MeshForwardSplit(
+      transferred: MeshEnvelope(id: id, tag: tag, ciphertext: ciphertext,
+        createdAt: createdAt, expiresAt: expiresAt,
+        hopCount: hopCount + 1, copiesLeft: transferredCopies),
+      remainingAtSender: MeshEnvelope(id: id, tag: tag, ciphertext: ciphertext,
+        createdAt: createdAt, expiresAt: expiresAt,
+        hopCount: hopCount, copiesLeft: remainingCopies),
+    );
   }
+}
+
+class MeshForwardSplit {
+  const MeshForwardSplit({required this.transferred, required this.remainingAtSender});
+  final MeshEnvelope transferred;
+  final MeshEnvelope remainingAtSender;
 }

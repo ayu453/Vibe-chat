@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vibe_chat/models/mesh_envelope.dart';
 import 'package:vibe_chat/services/mesh_simulator.dart';
@@ -23,6 +24,14 @@ void main() {
     expect(result.path, ['A', 'B', 'C', 'D', 'E']);
     expect(result.reachedGateway, isTrue);
     expect(result.uploadedIds, [packet().id]);
+  });
+
+  test('forwarding splits copy budget without increasing total copies', () {
+    final split = packet().splitForForward();
+    expect(split.transferred.copiesLeft + split.remainingAtSender.copiesLeft,
+        packet().copiesLeft);
+    expect(split.transferred.hopCount, 1);
+    expect(split.remainingAtSender.hopCount, 0);
   });
 
   test('store deduplicates and evicts oldest first under byte limit', () {

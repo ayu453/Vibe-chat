@@ -38,5 +38,10 @@ class MeshStore {
     return List.unmodifiable(_items.values);
   }
 
+  void replace(MeshEnvelope envelope, {required int nowMs}) {
+    envelope.validate(nowMs: nowMs);
+    if (_items.containsKey(envelope.id)) _items[envelope.id] = envelope;
+  }
+
   void remove(String id) => _items.remove(id);
 }
