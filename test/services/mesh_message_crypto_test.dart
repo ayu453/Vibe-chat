@@ -51,7 +51,7 @@ void main() {
     expect(clear['kind'], 'message');
     expect(clear['messageId'], message.id);
     expect(clear['text'], message.body);
-    expect(() => crypto.decryptAndVerify(
+    await expectLater(crypto.decryptAndVerify(
       identity: bob,
       senderEncryptionPublicKey: alice.encryptionPublicKey,
       expectedSenderId: alice.displayId,
