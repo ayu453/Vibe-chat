@@ -28,7 +28,7 @@ class FriendInvite {
   String toDeepLink() => 'vibechat://add?${Uri(queryParameters: toJson().map((k, v) => MapEntry(k, '$v'))).query}';
 
   static FriendInvite fromJson(Map<String, dynamic> json) {
-    if (json['v'] != 1) throw const FormatException('Unsupported Vibe invite version.');
+    if (json['v'] != 1 && json['v'] != '1') throw const FormatException('Unsupported Vibe invite version.');
     final invite = FriendInvite(
       username: json['username'] as String,
       signingPublicKey: json['signingPublicKey'] as String,
