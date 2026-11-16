@@ -15,6 +15,9 @@ import '../services/identity_service.dart';
 import '../services/internet_transport.dart';
 import '../services/local_database.dart';
 import '../services/friend_request_policy.dart';
+import 'mesh_debug_screen.dart';
+import '../services/mesh_gateway_service.dart';
+import '../services/nearby_mesh_transport.dart';
 
 class FriendHomeScreen extends StatefulWidget {
   const FriendHomeScreen({super.key, required this.identity});
@@ -26,6 +29,8 @@ class FriendHomeScreen extends StatefulWidget {
 class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerProviderStateMixin {
   final _db = LocalDatabase();
   late final InternetTransport _transport;
+  late final MeshGatewayService _meshGateway;
+  late final NearbyMeshTransport _nearbyMesh;
   late final TabController _tabs;
   StreamSubscription<ChatMessage>? _incoming;
   StreamSubscription<Uri>? _links;
@@ -42,6 +47,9 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _transport = InternetTransport(identity: widget.identity);
+    _nearbyMesh = NearbyMeshTransport();
+    _meshGateway = MeshGatewayService(identity: widget.identity, transport: _transport);
+    unawaited(_meshGateway.start());
     _incoming = _transport.incomingMessages.listen(_handleIncoming);
     _inviteReady = _loadMyInvite();
     _refresh();
@@ -99,6 +107,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
             old['encryption_public_key'] != invite.encryptionPublicKey)) {
           await _db.markContactKeyChanged(invite.id, signingPublicKey: invite.signingPublicKey,
             encryptionPublicKey: invite.encryptionPublicKey, encryptionKeySignature: invite.encryptionKeySignature);
+          unawaited(_meshGateway.refreshSubscriptions());
         } else if (data['action'] == 'request') {
           final existingContacts = await _db.contacts();
           final nameCollision = existingContacts.any((item) =>
@@ -113,6 +122,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
             status: 'requested', direction: 'incoming');
         } else if (data['action'] == 'accepted') {
           await _db.setContactStatus(invite.id, 'accepted');
+          unawaited(_meshGateway.refreshSubscriptions());
         }
       } catch (_) {}
       await _refresh();
@@ -187,6 +197,7 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
         old['encryption_public_key'] != invite.encryptionPublicKey)) {
       await _db.markContactKeyChanged(invite.id, signingPublicKey: invite.signingPublicKey,
         encryptionPublicKey: invite.encryptionPublicKey, encryptionKeySignature: invite.encryptionKeySignature);
+      unawaited(_meshGateway.refreshSubscriptions());
       await _refresh();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Key changed. Confirm it before messaging.')));
       return;
@@ -205,12 +216,14 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     if (!FriendRequestPolicy.canAccept(status: contact['status']! as String, direction: contact['direction']! as String)) return;
     final id = contact['id']! as String;
     await _db.setContactStatus(id, 'accepted');
+    unawaited(_meshGateway.refreshSubscriptions());
     try { await _sendControl(id, 'accepted'); } catch (_) {}
     await _refresh();
   }
 
   Future<void> _block(String id) async {
     await _db.setContactStatus(id, 'blocked');
+    unawaited(_meshGateway.refreshSubscriptions());
     await _refresh();
   }
 
@@ -221,11 +234,12 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
       content: Text('The encryption key for $id changed. Only continue if you verified this change with the person through another trusted channel.'),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm key'))],
     ));
-    if (confirmed == true) { await _db.confirmContactKey(id); await _refresh(); }
+    if (confirmed == true) { await _db.confirmContactKey(id); unawaited(_meshGateway.refreshSubscriptions()); await _refresh(); }
   }
 
   Future<void> _delete(String id) async {
     await _db.deleteContact(id);
+    unawaited(_meshGateway.refreshSubscriptions());
     await _refresh();
   }
 
@@ -247,6 +261,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
     _incoming?.cancel();
     _links?.cancel();
     _refreshTimer?.cancel();
+    _meshGateway.dispose();
+    _nearbyMesh.dispose();
     _transport.dispose();
     super.dispose();
   }
@@ -258,6 +274,8 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
       actions: [
         IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+        IconButton(tooltip: 'Mesh debug', icon: const Icon(Icons.hub_outlined),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MeshDebugScreen(transport: _nearbyMesh)))),
         IconButton(tooltip: 'My ID card', icon: const Icon(Icons.qr_code_2),
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyIdCardScreen(identity: widget.identity, invite: _myInvite)))),
         IconButton(tooltip: 'Add friend', icon: const Icon(Icons.person_add_alt_1), onPressed: _addFriend),

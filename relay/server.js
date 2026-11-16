@@ -1,5 +1,6 @@
 import { createHash, createPublicKey, randomBytes, verify } from 'node:crypto';
 import { WebSocketServer } from 'ws';
+import { MeshRouter } from './mesh-router.js';
 
 const PORT = Number(process.env.PORT || 8787);
 const MAX_MESSAGE_BYTES = 32 * 1024;
@@ -13,6 +14,7 @@ const knownIdentities = new Map();
 const offlineQueues = new Map();
 const dedupe = new Map();
 const publicKeyPrefix = Buffer.from('302a300506032b6570032100', 'hex');
+const meshRouter = new MeshRouter();
 
 function suffix(raw) {
   return createHash('sha256').update(raw).digest('hex').slice(0, 4).toUpperCase();
@@ -48,6 +50,8 @@ wss.on('connection', ws => {
   let authenticated = false;
   let identity = null;
   const rate = [];
+  const meshRate = [];
+  let meshUploadToken = null;
   const authTimer = setTimeout(() => {
     if (!authenticated) ws.close(4001, 'authentication timeout');
   }, 10_000);
@@ -92,6 +96,8 @@ wss.on('connection', ws => {
         authenticated = true;
         clearTimeout(authTimer);
         send(ws, { type: 'authenticated', id: identity.id });
+        meshUploadToken = randomBytes(24).toString('base64url');
+        send(ws, { type: 'mesh_upload_token', token: meshUploadToken });
         const queued = offlineQueues.get(identity.id) || [];
         offlineQueues.delete(identity.id);
         for (const item of queued) {
@@ -110,6 +116,35 @@ wss.on('connection', ws => {
     if (rate.length >= RATE_LIMIT) { send(ws, { type: 'error', code: 'RATE_LIMIT' }); return; }
     rate.push(now);
 
+    if (packet.type === 'mesh_subscribe') {
+      const tags = Array.isArray(packet.tags) ? packet.tags : [];
+      try {
+        const result = meshRouter.subscribe(ws, tags, now);
+        send(ws, { type: 'mesh_subscribed', count: result.count });
+        for (const envelope of result.envelopes) send(ws, { type: 'mesh_envelope', envelope });
+      } catch {
+        send(ws, { type: 'error', code: 'INVALID_MESH_SUBSCRIPTION' });
+      }
+      return;
+    }
+    if (packet.type === 'mesh_publish') {
+      while (meshRate.length && meshRate[0] <= now - RATE_WINDOW_MS) meshRate.shift();
+      if (!meshUploadToken || packet.token !== meshUploadToken) {
+        send(ws, { type: 'error', code: 'MESH_TOKEN_REQUIRED' }); return;
+      }
+      meshUploadToken = randomBytes(24).toString('base64url');
+      send(ws, { type: 'mesh_upload_token', token: meshUploadToken });
+      if (meshRate.length >= 30) {
+        send(ws, { type: 'error', code: 'MESH_RATE_LIMIT' }); return;
+      }
+      meshRate.push(now);
+      const result = meshRouter.publish(identity.id, packet.envelope, now);
+      if (!result.accepted && !result.duplicate) {
+        send(ws, { type: 'error', code: result.error }); return;
+      }
+      send(ws, { type: 'mesh_status', id: packet.envelope?.id, status: result.duplicate ? 'duplicate' : 'stored' });
+      return;
+    }
     if (packet.type === 'lookup') {
       const peer = knownIdentities.get(String(packet.to || ''));
       send(ws, { type: 'lookup_result', requestId: packet.requestId, found: Boolean(peer), ...(peer || {}) });
@@ -150,6 +185,7 @@ wss.on('connection', ws => {
 
   ws.on('close', () => {
     clearTimeout(authTimer);
+    meshRouter.unsubscribe(ws);
     if (identity && clients.get(identity.id)?.ws === ws) clients.delete(identity.id);
   });
   ws.on('error', () => {});

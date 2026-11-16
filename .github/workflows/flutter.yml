@@ -27,3 +27,5 @@ jobs:
       - run: cd relay && npm install
       - run: cd relay && npm start > /tmp/vibe-relay.log 2>&1 &
       - run: cd relay && npm run test:two-clients
+      - run: cd relay && npm run test:mesh-router
+      - run: cd relay && npm run test:mesh-protocol

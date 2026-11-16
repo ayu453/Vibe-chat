@@ -1,0 +1,73 @@
+{
+  "language": "es",
+  "moods": {
+    "funny": [
+      "jaja",
+      "jajaja",
+      "gracioso",
+      "divertido",
+      "broma",
+      "me rio"
+    ],
+    "sad": [
+      "triste",
+      "llorar",
+      "lágrimas",
+      "dolor",
+      "solo",
+      "corazón roto"
+    ],
+    "shock": [
+      "sorprendido",
+      "increíble",
+      "no puede ser",
+      "qué pasó",
+      "wow"
+    ],
+    "win": [
+      "ganamos",
+      "victoria",
+      "felicidades",
+      "éxito",
+      "campeón"
+    ],
+    "love": [
+      "amor",
+      "te quiero",
+      "te amo",
+      "cariño",
+      "te extraño"
+    ],
+    "angry": [
+      "enojado",
+      "furioso",
+      "odio",
+      "molesto",
+      "enfadado"
+    ],
+    "scary": [
+      "miedo",
+      "asustado",
+      "terror",
+      "espeluznante"
+    ],
+    "bored": [
+      "aburrido",
+      "qué aburrido",
+      "sin nada que hacer"
+    ],
+    "party": [
+      "fiesta",
+      "celebrar",
+      "cumpleaños",
+      "vamos a bailar"
+    ],
+    "oops": [
+      "ups",
+      "perdón",
+      "lo siento",
+      "mi culpa",
+      "error"
+    ]
+  }
+}

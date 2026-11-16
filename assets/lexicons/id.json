@@ -1,0 +1,72 @@
+{
+  "language": "id",
+  "moods": {
+    "funny": [
+      "haha",
+      "wkwk",
+      "lucu",
+      "bercanda",
+      "ngakak"
+    ],
+    "sad": [
+      "sedih",
+      "menangis",
+      "air mata",
+      "sakit hati",
+      "kesepian"
+    ],
+    "shock": [
+      "kaget",
+      "terkejut",
+      "tidak percaya",
+      "wow",
+      "serius"
+    ],
+    "win": [
+      "menang",
+      "selamat",
+      "juara",
+      "berhasil",
+      "kemenangan"
+    ],
+    "love": [
+      "cinta",
+      "sayang",
+      "aku rindu",
+      "aku cinta kamu",
+      "kasih"
+    ],
+    "angry": [
+      "marah",
+      "kesal",
+      "benci",
+      "jengkel",
+      "emosi"
+    ],
+    "scary": [
+      "takut",
+      "seram",
+      "menyeramkan",
+      "hantu"
+    ],
+    "bored": [
+      "bosan",
+      "jenuh",
+      "tidak ada kegiatan",
+      "ngantuk"
+    ],
+    "party": [
+      "pesta",
+      "merayakan",
+      "ulang tahun",
+      "ayo menari"
+    ],
+    "oops": [
+      "ups",
+      "maaf",
+      "salahku",
+      "kesalahan",
+      "lupa"
+    ]
+  }
+}

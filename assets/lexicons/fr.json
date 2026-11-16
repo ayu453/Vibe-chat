@@ -1,0 +1,75 @@
+{
+  "language": "fr",
+  "moods": {
+    "funny": [
+      "haha",
+      "hahaha",
+      "mdr",
+      "drôle",
+      "blague",
+      "amusant"
+    ],
+    "sad": [
+      "triste",
+      "pleurer",
+      "larmes",
+      "douleur",
+      "seul",
+      "chagrin"
+    ],
+    "shock": [
+      "choqué",
+      "surpris",
+      "incroyable",
+      "sans blague",
+      "quoi"
+    ],
+    "win": [
+      "gagné",
+      "victoire",
+      "bravo",
+      "félicitations",
+      "réussi"
+    ],
+    "love": [
+      "amour",
+      "je t'aime",
+      "tu me manques",
+      "adorable",
+      "chéri",
+      "je t aime"
+    ],
+    "angry": [
+      "énervé",
+      "furieux",
+      "colère",
+      "déteste",
+      "fâché"
+    ],
+    "scary": [
+      "peur",
+      "effrayant",
+      "terrifiant",
+      "fantôme"
+    ],
+    "bored": [
+      "ennuyé",
+      "ennuyeux",
+      "je m'ennuie",
+      "je m ennuie"
+    ],
+    "party": [
+      "fête",
+      "célébrer",
+      "anniversaire",
+      "danser"
+    ],
+    "oops": [
+      "oups",
+      "désolé",
+      "pardon",
+      "mon erreur",
+      "faute"
+    ]
+  }
+}

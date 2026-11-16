@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:share_plus/share_plus.dart';
 import 'models/chat_message.dart';
 import 'services/identity_service.dart';
 import 'services/internet_transport.dart';
@@ -8,6 +13,7 @@ import 'services/local_database.dart';
 import 'services/message_transport.dart';
 import 'services/mood_detector.dart';
 import 'services/mood_media_service.dart';
+import 'services/local_backup_service.dart';
 
 void main() => runApp(const VibeChatApp());
 
@@ -134,9 +140,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           : const Text('Create my Vibe ID'),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: _busy ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupRestoreScreen())),
+                    child: const Text('Restore encrypted backup'),
+                  ),
                   const SizedBox(height: 14),
                   const Text('Your keypair is generated on this device. Your identity stays local.',
                       textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 22),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                        Text('How Vibe Chat works', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        SizedBox(height: 10),
+                        Text('• Your username creates a Vibe ID. No phone number or account is needed.'),
+                        SizedBox(height: 8),
+                        Text('• Add friends by scanning their QR code or sharing your ID.'),
+                        SizedBox(height: 8),
+                        Text('• Nearby mode can pass encrypted messages between phones that are close to each other.'),
+                        SizedBox(height: 8),
+                        Text('• Carrier mode lets your phone carry encrypted packets for others. Carriers cannot read message text.'),
+                        SizedBox(height: 8),
+                        Text('• Mood detection runs on this phone. Message text is not sent to a cloud mood service.'),
+                      ]),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -339,6 +369,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    unawaited(_moods.initialize());
     _load();
     _subscription = _transport.incomingMessages.listen(_receive);
     _statusSubscription = _transport.statusUpdates.listen(_updateMessageStatus);
@@ -354,7 +385,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (contact == null || contact['status'] != 'accepted' || (contact['key_changed'] as int? ?? 0) == 1) return;
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    final mood = _moods.detect(text);
+    await _moods.initialize();
+    final contextMessages = _messages.skip(_messages.length > 3 ? _messages.length - 3 : 0).map((item) => item.body).toList();
+    final moodResult = _moods.detectDetailed(text, recentMessages: contextMessages);
+    final mood = moodResult.mood;
     final message = ChatMessage(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       conversationId: widget.conversationId,
@@ -369,7 +403,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _input.clear();
     await _db.insertMessage(message);
     if (mounted) setState(() => _messages = [..._messages, message]);
-    await _onNewMood(mood, soundId: message.soundId);
+    await _onNewMood(mood, soundId: message.soundId, playSound: false);
     try {
       await _transport.send(message);
     } catch (_) {
@@ -399,18 +433,68 @@ class _ChatScreenState extends State<ChatScreen> {
     if (await _db.isBlocked(message.conversationId)) return;
     final contact = await _db.contact(message.conversationId);
     if (contact == null || contact['status'] != 'accepted' || (contact['key_changed'] as int? ?? 0) == 1) return;
+    await _moods.initialize();
+    final contextMessages = _messages.skip(_messages.length > 3 ? _messages.length - 3 : 0).map((item) => item.body).toList();
+    final localMood = _moods.detectDetailed(message.body, recentMessages: contextMessages);
     await _db.insertMessage(message);
-    await _onNewMood(message.moodId, soundId: message.soundId);
+    await _onNewMood(localMood.mood, soundId: localMood.mood, playSound: localMood.shouldPlaySound);
     if (mounted) setState(() => _messages = [..._messages, message]);
     _jumpToBottom();
   }
 
-  Future<void> _onNewMood(String mood, {String? soundId}) async {
+  Future<void> _onNewMood(String mood, {String? soundId, bool playSound = true}) async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool('backgrounds_on') != false && mounted) {
-      setState(() => _backgroundMood = mood);
+    if (prefs.getBool('backgrounds_on') != false && mounted) setState(() => _backgroundMood = mood);
+    if (playSound && mood != 'neutral') {
+      await _media.play(soundId ?? mood, conversationId: widget.conversationId);
+    } else {
+      await _media.stop();
     }
-    await _media.play(soundId ?? mood);
+  }
+
+  Future<void> _showChatSoundSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    var muted = prefs.getBool('chat_mute_${widget.conversationId}') ?? false;
+    var important = prefs.getBool('chat_important_${widget.conversationId}') ?? false;
+    var quietStart = prefs.getInt('chat_quiet_start_${widget.conversationId}');
+    var quietEnd = prefs.getInt('chat_quiet_end_${widget.conversationId}');
+    TimeOfDay? toTime(int? minute) => minute == null ? null : TimeOfDay(hour: minute ~/ 60, minute: minute % 60);
+    int fromTime(TimeOfDay value) => value.hour * 60 + value.minute;
+    await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: Text('${widget.contactName} preferences'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          SwitchListTile(title: const Text('Mute this chat'), value: muted, onChanged: (v) => setDialogState(() => muted = v)),
+          SwitchListTile(title: const Text('Important moods only'), value: important, onChanged: (v) => setDialogState(() => important = v)),
+          ListTile(title: const Text('Quiet hours start'), subtitle: Text(toTime(quietStart)?.format(context) ?? 'Not set'),
+            trailing: const Icon(Icons.schedule), onTap: () async {
+              final picked = await showTimePicker(context: context, initialTime: toTime(quietStart) ?? const TimeOfDay(hour: 22, minute: 0));
+              if (picked != null) setDialogState(() => quietStart = fromTime(picked));
+            }),
+          ListTile(title: const Text('Quiet hours end'), subtitle: Text(toTime(quietEnd)?.format(context) ?? 'Not set'),
+            trailing: const Icon(Icons.schedule), onTap: () async {
+              final picked = await showTimePicker(context: context, initialTime: toTime(quietEnd) ?? const TimeOfDay(hour: 7, minute: 0));
+              if (picked != null) setDialogState(() => quietEnd = fromTime(picked));
+            }),
+          TextButton(onPressed: () => setDialogState(() { quietStart = null; quietEnd = null; }), child: const Text('Clear quiet hours')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () async {
+            await prefs.setBool('chat_mute_${widget.conversationId}', muted);
+            await prefs.setBool('chat_important_${widget.conversationId}', important);
+            if (quietStart == null || quietEnd == null) {
+              await prefs.remove('chat_quiet_start_${widget.conversationId}');
+              await prefs.remove('chat_quiet_end_${widget.conversationId}');
+            } else {
+              await prefs.setInt('chat_quiet_start_${widget.conversationId}', quietStart!);
+              await prefs.setInt('chat_quiet_end_${widget.conversationId}', quietEnd!);
+            }
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          }, child: const Text('Save')),
+        ],
+      ),
+    ));
   }
 
   void _jumpToBottom() {
@@ -442,6 +526,7 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(widget.contactName, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
             const Text('Vibe chat', style: TextStyle(fontSize: 11, color: Colors.black54)),
           ]),
+          actions: [IconButton(tooltip: 'Chat preferences', onPressed: _showChatSoundSettings, icon: const Icon(Icons.tune))],
         ),
         body: Stack(
           children: [
@@ -532,25 +617,59 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 }
 
-class _MoodBackground extends StatelessWidget {
+class _MoodBackground extends StatefulWidget {
   const _MoodBackground({required this.mood});
   final String mood;
+  @override
+  State<_MoodBackground> createState() => _MoodBackgroundState();
+}
+
+class _MoodBackgroundState extends State<_MoodBackground> {
+  String? _asset;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MoodBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mood != widget.mood) _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saver = prefs.getBool('battery_saver') == true || prefs.getBool('low_data') == true;
+    final reduceMotion = prefs.getBool('reduce_motion') == true;
+    String? asset;
+    if (!saver) {
+      final pack = prefs.getString('meme_pack') ?? 'meme';
+      try {
+        final manifest = jsonDecode(await rootBundle.loadString('assets/meme_packs/$pack/manifest.json')) as Map<String, dynamic>;
+        final backgrounds = manifest['backgrounds'] as Map<String, dynamic>? ?? {};
+        final entry = backgrounds[widget.mood];
+        if (entry is String && entry.isNotEmpty) asset = entry;
+        if (entry is List && entry.isNotEmpty && entry.first is String) asset = entry.first as String;
+      } catch (_) {}
+      asset ??= 'assets/memes/${widget.mood}.gif';
+    }
+    if (!mounted) return;
+    setState(() { _asset = asset; _reduceMotion = reduceMotion; });
+  }
 
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        child: Image.asset(
-          'assets/memes/$mood.gif',
-          key: ValueKey(mood),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (_, __, ___) => Container(
-            color: const Color(0xFFECEAF5),
-            key: ValueKey('fallback-$mood'),
-          ),
-        ),
-      );
+    duration: _reduceMotion ? Duration.zero : const Duration(milliseconds: 500),
+    child: _asset == null
+      ? Container(key: ValueKey('empty-${widget.mood}'), color: const Color(0xFFECEAF5))
+      : Stack(key: ValueKey(_asset), fit: StackFit.expand, children: [
+          Image.asset(_asset!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: const Color(0xFFECEAF5))),
+          Container(color: Colors.black.withValues(alpha: .28)),
+        ]),
+  );
 }
 
 class SettingsScreen extends StatefulWidget {
@@ -560,16 +679,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _muted = false;
-  bool _sounds = true;
-  bool _backgrounds = true;
+  bool _muted = false, _sounds = true, _backgrounds = true, _dnd = false;
+  bool _reduceMotion = false, _batterySaver = false, _lowData = false;
   double _volume = .7;
+  String _soundPack = 'meme', _memePack = 'meme';
+  int? _quietStart, _quietEnd;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -579,44 +696,182 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _sounds = prefs.getBool('sounds_on') ?? true;
       _backgrounds = prefs.getBool('backgrounds_on') ?? true;
       _volume = prefs.getDouble('volume') ?? .7;
+      _dnd = prefs.getBool('dnd_on') ?? false;
+      _reduceMotion = prefs.getBool('reduce_motion') ?? false;
+      _batterySaver = prefs.getBool('battery_saver') ?? false;
+      _lowData = prefs.getBool('low_data') ?? false;
+      _soundPack = prefs.getString('sound_pack') ?? 'meme';
+      _memePack = prefs.getString('meme_pack') ?? 'meme';
+      _quietStart = prefs.getInt('quiet_start_minute');
+      _quietEnd = prefs.getInt('quiet_end_minute');
     });
   }
 
-  Future<void> _save(String key, Object value) async {
+  Future<void> _saveBool(String key, bool value) async => (await SharedPreferences.getInstance()).setBool(key, value);
+  Future<void> _saveDouble(String key, double value) async => (await SharedPreferences.getInstance()).setDouble(key, value);
+  Future<void> _saveString(String key, String value) async => (await SharedPreferences.getInstance()).setString(key, value);
+
+  Future<void> _pickQuietTime(bool start) async {
+    final current = start ? _quietStart : _quietEnd;
+    final initial = current == null ? TimeOfDay(hour: start ? 22 : 7, minute: 0) : TimeOfDay(hour: current ~/ 60, minute: current % 60);
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null) return;
+    final minute = picked.hour * 60 + picked.minute;
     final prefs = await SharedPreferences.getInstance();
-    if (value is bool) await prefs.setBool(key, value);
-    if (value is double) await prefs.setDouble(key, value);
+    setState(() { if (start) { _quietStart = minute; } else { _quietEnd = minute; } });
+    await prefs.setInt(start ? 'quiet_start_minute' : 'quiet_end_minute', minute);
+  }
+
+  String _formatMinute(int? value) => value == null ? 'Not set' : TimeOfDay(hour:value ~/ 60, minute:value % 60).format(context);
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Settings')),
+    body: ListView(padding: const EdgeInsets.all(18), children: [
+      SwitchListTile(title: const Text('Mute'), subtitle: const Text('Silence all mood sounds'), value: _muted,
+        onChanged: (v) { setState(() => _muted = v); _saveBool('muted', v); }),
+      SwitchListTile(title: const Text('Sounds'), subtitle: const Text('Play receiver-selected mood clips'), value: _sounds,
+        onChanged: (v) { setState(() => _sounds = v); _saveBool('sounds_on', v); }),
+      SwitchListTile(title: const Text('Do Not Disturb'), subtitle: const Text('Pause all in-app mood audio'), value: _dnd,
+        onChanged: (v) { setState(() => _dnd = v); _saveBool('dnd_on', v); }),
+      ListTile(title: const Text('Sound pack'), subtitle: const Text('Each receiver chooses what they hear'),
+        trailing: DropdownButton<String>(value:_soundPack, items: const [
+          DropdownMenuItem(value:'meme',child:Text('Meme')), DropdownMenuItem(value:'calm',child:Text('Calm')),
+          DropdownMenuItem(value:'bollywood-style',child:Text('Bollywood style')), DropdownMenuItem(value:'anime-style',child:Text('Anime style')),
+        ], onChanged:(v) { if(v==null)return; setState(()=>_soundPack=v); _saveString('sound_pack',v); })),
+      ListTile(title: const Text('Volume'), subtitle: Slider(value:_volume, onChanged:(v){setState(()=>_volume=v);_saveDouble('volume',v);})),
+      SwitchListTile(title: const Text('Mood backgrounds'), subtitle: const Text('Use receiver-selected mood wallpapers'), value:_backgrounds,
+        onChanged:(v){setState(()=>_backgrounds=v);_saveBool('backgrounds_on',v);}),
+      ListTile(title: const Text('Background pack'), trailing: DropdownButton<String>(value:_memePack, items: const [
+        DropdownMenuItem(value:'meme',child:Text('Meme')), DropdownMenuItem(value:'calm',child:Text('Calm')),
+        DropdownMenuItem(value:'bollywood-style',child:Text('Bollywood style')), DropdownMenuItem(value:'anime-style',child:Text('Anime style')),
+      ], onChanged:(v){if(v==null)return;setState(()=>_memePack=v);_saveString('meme_pack',v);})),
+      ListTile(title: const Text('Quiet hours start'), subtitle: Text(_formatMinute(_quietStart)), trailing: const Icon(Icons.schedule), onTap:()=>_pickQuietTime(true)),
+      ListTile(title: const Text('Quiet hours end'), subtitle: Text(_formatMinute(_quietEnd)), trailing: const Icon(Icons.schedule), onTap:()=>_pickQuietTime(false)),
+      SwitchListTile(title: const Text('Battery saver'), subtitle: const Text('Disable animated backgrounds'), value:_batterySaver,
+        onChanged:(v){setState(()=>_batterySaver=v);_saveBool('battery_saver',v);}),
+      SwitchListTile(title: const Text('Low data mode'), subtitle: const Text('Disable animated backgrounds'), value:_lowData,
+        onChanged:(v){setState(()=>_lowData=v);_saveBool('low_data',v);}),
+      SwitchListTile(title: const Text('Reduce motion'), subtitle: const Text('Use instant background changes'), value:_reduceMotion,
+        onChanged:(v){setState(()=>_reduceMotion=v);_saveBool('reduce_motion',v);}),
+      ListTile(
+        leading: const Icon(Icons.backup_outlined),
+        title: const Text('Encrypted local backup'),
+        subtitle: const Text('Export or restore chats and identity keys'),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupRestoreScreen())),
+      ),
+      ListTile(
+        leading: const Icon(Icons.description_outlined),
+        title: const Text('Media licenses'),
+        subtitle: const Text('Sources and license status for sounds, songs and backgrounds'),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MediaLicensesScreen())),
+      ),
+    ]),
+  );
+}
+
+class MediaLicensesScreen extends StatelessWidget {
+  const MediaLicensesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Media licenses')),
+    body: ListView(padding: const EdgeInsets.all(18), children: const [
+      Text('No third-party sound, song or meme files are bundled in the starter packs.',
+        style: TextStyle(fontWeight: FontWeight.w600)),
+      SizedBox(height: 14),
+      ListTile(title: Text('Meme sound pack'), subtitle: Text('Manifest ready; audio files not yet supplied. Add an original or licensed clip and record its creator, source and license.')),
+      ListTile(title: Text('Calm sound pack'), subtitle: Text('Manifest ready; no audio files supplied.')),
+      ListTile(title: Text('Bollywood-style pack'), subtitle: Text('Use only original compositions or appropriately licensed recordings. No film soundtrack/dialogue clips.')),
+      ListTile(title: Text('Anime-style pack'), subtitle: Text('Use only original compositions or appropriately licensed recordings. No anime soundtrack/dialogue clips.')),
+      ListTile(title: Text('Song snippets'), subtitle: Text('Only original/licensed tracks; playback is limited to ten seconds with reduced volume.')),
+      ListTile(title: Text('Meme backgrounds'), subtitle: Text('Pack manifests are ready; image/GIF files and per-file license records are still required.')),
+      SizedBox(height: 8),
+      Text('Before release, add the exact source URL, creator, license name, attribution text and proof of permission for every media file.'),
+    ]),
+  );
+}
+
+class BackupRestoreScreen extends StatefulWidget {
+  const BackupRestoreScreen({super.key});
+  @override
+  State<BackupRestoreScreen> createState() => _BackupRestoreScreenState();
+}
+
+class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
+  final _password = TextEditingController();
+  final _backup = LocalBackupService();
+  bool _busy = false;
+  String? _status;
+
+  @override
+  void dispose() { _password.dispose(); super.dispose(); }
+
+  Future<void> _export() async {
+    setState(() { _busy = true; _status = null; });
+    try {
+      final bytes = await _backup.createBackup(_password.text);
+      await Share.shareXFiles([
+        XFile.fromData(bytes, name: 'vibe-chat-backup.vibe', mimeType: 'application/octet-stream'),
+      ], text: 'Encrypted Vibe Chat backup. Keep your password safe; it cannot be recovered.');
+      if (mounted) setState(() => _status = 'Encrypted backup prepared. Save the file somewhere you control.');
+    } catch (error) {
+      if (mounted) setState(() => _status = error.toString().replaceFirst('ArgumentError: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    setState(() { _busy = true; _status = null; });
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom, allowedExtensions: ['vibe'], withData: true,
+      );
+      if (picked == null || picked.files.isEmpty) return;
+      final bytes = picked.files.single.bytes;
+      if (bytes == null) throw StateError('Could not read the selected backup file.');
+      await _backup.restoreBackup(bytes, _password.text);
+      if (!mounted) return;
+      setState(() => _status = 'Backup restored. Vibe Chat will close so it can reload the restored identity and chats.');
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      await SystemNavigator.pop();
+    } catch (error) {
+      if (mounted) setState(() => _status = error.toString().replaceFirst('ArgumentError: ', ''));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
-        body: ListView(padding: const EdgeInsets.all(18), children: [
-          SwitchListTile(
-            title: const Text('Mute'),
-            subtitle: const Text('Silence all mood sounds'),
-            value: _muted,
-            onChanged: (v) { setState(() => _muted = v); _save('muted', v); },
-          ),
-          SwitchListTile(
-            title: const Text('Sounds'),
-            subtitle: const Text('Play mood sound effects'),
-            value: _sounds,
-            onChanged: (v) { setState(() => _sounds = v); _save('sounds_on', v); },
-          ),
-          ListTile(
-            title: const Text('Volume'),
-            subtitle: Slider(
-              value: _volume,
-              onChanged: (v) { setState(() => _volume = v); _save('volume', v); },
-            ),
-          ),
-          SwitchListTile(
-            title: const Text('Mood backgrounds'),
-            subtitle: const Text('Change chat wallpaper with the message mood'),
-            value: _backgrounds,
-            onChanged: (v) { setState(() => _backgrounds = v); _save('backgrounds_on', v); },
-          ),
-        ]),
-      );
+    appBar: AppBar(title: const Text('Encrypted local backup')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('Your chats, contacts and identity keys are encrypted on this device before you save the file. Nothing is uploaded to a cloud service.'),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _password,
+        obscureText: true,
+        decoration: const InputDecoration(
+          labelText: 'Backup password',
+          helperText: 'Use at least 10 characters. The password is not recoverable.',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 18),
+      FilledButton.icon(
+        onPressed: _busy ? null : _export,
+        icon: const Icon(Icons.save_alt),
+        label: const Text('Create encrypted backup'),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : _restore,
+        icon: const Icon(Icons.restore),
+        label: const Text('Restore from backup file'),
+      ),
+      if (_busy) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+      if (_status != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_status!)),
+    ]),
+  );
 }
