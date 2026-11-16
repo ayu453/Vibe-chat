@@ -48,7 +48,10 @@ class FriendInvite {
 
   static FriendInvite parse(String input) {
     final value = input.trim();
-    if (value.startsWith('{')) {\n      return fromJson(jsonDecode(value) as Map<String, dynamic>);\n    }\n    if (value.startsWith('vibechat://')) {
+    if (value.startsWith('{')) {
+      return fromJson(jsonDecode(value) as Map<String, dynamic>);
+    }
+    if (value.startsWith('vibechat://')) {
       final uri = Uri.parse(value);
       if (uri.scheme != 'vibechat' || uri.host != 'add') {
         throw const FormatException('This is not a Vibe Chat add link.');
