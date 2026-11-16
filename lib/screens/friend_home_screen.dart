@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -299,7 +300,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         icon: const Icon(Icons.qr_code_scanner), label: Text(_scanning ? 'Close scanner' : 'Scan QR code')),
       if (_scanning) SizedBox(height: 300, child: ClipRRect(borderRadius: BorderRadius.circular(16),
         child: MobileScanner(onDetect: (capture) {
-          final raw = capture.barcodes.firstOrNull?.rawValue;
+          final raw = capture.barcodes.isEmpty ? null : capture.barcodes.first.rawValue;
           if (raw != null && mounted) Navigator.pop(context, raw);
         }))),
       const SizedBox(height: 20),
