@@ -367,7 +367,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _input.clear();
     await _db.insertMessage(message);
     if (mounted) setState(() => _messages = [..._messages, message]);
-    await _onNewMood(mood);
+    await _onNewMood(mood, soundId: message.soundId);
     try {
       await _transport.send(message);
     } catch (_) {
@@ -394,17 +394,17 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _receive(ChatMessage message) async {
     if (message.conversationId != widget.conversationId) return;
     await _db.insertMessage(message);
-    await _onNewMood(message.moodId);
+    await _onNewMood(message.moodId, soundId: message.soundId);
     if (mounted) setState(() => _messages = [..._messages, message]);
     _jumpToBottom();
   }
 
-  Future<void> _onNewMood(String mood) async {
+  Future<void> _onNewMood(String mood, {String? soundId}) async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool('backgrounds_on') != false && mounted) {
       setState(() => _backgroundMood = mood);
     }
-    await _media.play(mood);
+    await _media.play(soundId ?? mood);
   }
 
   void _jumpToBottom() {
