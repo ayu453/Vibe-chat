@@ -1,0 +1,10 @@
+<!-- Add the permission directly under the manifest element. -->
+<uses-permission android:name="android.permission.CAMERA" />
+
+<!-- Add this intent-filter inside MainActivity, alongside Flutter's existing filters. -->
+<intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="vibechat" android:host="add" />
+</intent-filter>
