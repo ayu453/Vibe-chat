@@ -16,6 +16,8 @@ void main() {
       encryptionKeySignature: base64Encode(sig.bytes), relayUrl: 'wss://relay.example');
     await invite.verify();
     expect(invite.id, startsWith('reader#'));
+    final encoded = invite.toJson()..['id'] = 'reader#FFFF';
+    expect(() => FriendInvite.fromJson(encoded), throwsFormatException);
     final tampered = FriendInvite.fromIdentity(username: 'reader',
       signingPublicKey: invite.signingPublicKey, encryptionPublicKey: base64Encode(List<int>.filled(32, 9)),
       encryptionKeySignature: invite.encryptionKeySignature, relayUrl: invite.relayUrl);
