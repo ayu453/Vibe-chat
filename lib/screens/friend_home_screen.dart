@@ -158,6 +158,9 @@ class _FriendHomeScreenState extends State<FriendHomeScreen> with SingleTickerPr
 
   Future<void> _confirmInvite(FriendInvite invite) async {
     await invite.verify();
+    if (invite.relayUrl != RelayConfig.relayUrl) {
+      throw const FormatException('This invite uses a different relay. Switch your relay setting before adding this friend.');
+    }
     if (!mounted) return;
     final allContacts = await _db.contacts();
     final sameName = allContacts.any((c) => c['username'] == invite.username && c['id'] != invite.id);
