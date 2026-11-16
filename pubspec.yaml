@@ -31,3 +31,13 @@ flutter:
   assets:
     - assets/sounds/
     - assets/memes/
+    - assets/lexicons/
+    - assets/sound_packs/meme/
+    - assets/sound_packs/calm/
+    - assets/sound_packs/bollywood-style/
+    - assets/sound_packs/anime-style/
+    - assets/meme_packs/meme/
+    - assets/meme_packs/calm/
+    - assets/meme_packs/bollywood-style/
+    - assets/meme_packs/anime-style/
+    - assets/songs/

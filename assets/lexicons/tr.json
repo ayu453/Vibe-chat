@@ -1,0 +1,71 @@
+{
+  "language": "tr",
+  "moods": {
+    "funny": [
+      "haha",
+      "komik",
+      "şaka",
+      "güldüm",
+      "eğlenceli"
+    ],
+    "sad": [
+      "üzgün",
+      "ağlamak",
+      "gözyaşı",
+      "üzüntü",
+      "yalnız"
+    ],
+    "shock": [
+      "şaşkın",
+      "inanılmaz",
+      "şok",
+      "ne oldu",
+      "vay"
+    ],
+    "win": [
+      "kazandık",
+      "zafer",
+      "tebrikler",
+      "başarı",
+      "şampiyon"
+    ],
+    "love": [
+      "aşk",
+      "seni seviyorum",
+      "özledim",
+      "canım",
+      "sevgilim"
+    ],
+    "angry": [
+      "kızgın",
+      "sinirli",
+      "nefret",
+      "öfkeli",
+      "kavga"
+    ],
+    "scary": [
+      "korku",
+      "korktum",
+      "ürkütücü",
+      "hayalet"
+    ],
+    "bored": [
+      "sıkıldım",
+      "sıkıcı",
+      "canım sıkılıyor"
+    ],
+    "party": [
+      "parti",
+      "kutlama",
+      "doğum günü",
+      "dans"
+    ],
+    "oops": [
+      "pardon",
+      "özür dilerim",
+      "hata",
+      "yanlışlıkla",
+      "tüh"
+    ]
+  }
+}

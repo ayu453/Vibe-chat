@@ -1,0 +1,39 @@
+{
+  "id": "meme",
+  "name": "Meme",
+  "sounds": {
+    "funny": [
+      "sound_packs/meme/funny_1.mp3",
+      "sound_packs/meme/funny_2.mp3"
+    ],
+    "sad": [
+      "sound_packs/meme/sad_1.mp3"
+    ],
+    "shock": [
+      "sound_packs/meme/shock_1.mp3"
+    ],
+    "win": [
+      "sound_packs/meme/win_1.mp3"
+    ],
+    "love": [
+      "sound_packs/meme/love_1.mp3"
+    ],
+    "angry": [
+      "sound_packs/meme/angry_1.mp3"
+    ],
+    "scary": [
+      "sound_packs/meme/scary_1.mp3"
+    ],
+    "bored": [
+      "sound_packs/meme/bored_1.mp3"
+    ],
+    "party": [
+      "sound_packs/meme/party_1.mp3"
+    ],
+    "oops": [
+      "sound_packs/meme/oops_fahhh.mp3"
+    ],
+    "neutral": []
+  },
+  "songs": []
+}

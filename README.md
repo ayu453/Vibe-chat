@@ -46,3 +46,14 @@ Flutter tests: `flutter test`.
 - A relay restart clears its in-memory directory and queued messages.
 - The QR invite currently advertises one relay URL and one device keypair; multi-device identity and key recovery are not implemented.
 - Review the cryptographic protocol before public production. This MVP does not yet provide forward secrecy or a formal audited protocol.
+
+ 
+## Offline multilingual mood and receiver media packs
+- MoodDetector keeps its original detect(String) method and adds confidence-aware results. It loads bundled JSON lexicons for English, Hindi (Devanagari and romanized Hinglish), Spanish, French, Portuguese, Arabic, Russian, Indonesian, Bengali and Turkish.
+- Emoji, punctuation, capitalization and elongated-word rules run locally. The last three local messages can reduce confidence for nervous laughter or ambiguous replies after conflict. Low-confidence results do not trigger audio.
+- No message text is sent to a cloud model for mood detection. A disabled TFLite extension point is present; no TFLite model or runtime is bundled in this change.
+- Receiver-selected sound/background packs are defined by manifest files. Messages carry mood identifiers, not media files. Starter pack manifests intentionally contain no sound/song/GIF binaries; add only original or licensed media before release.
+- The meme pack reserves an oops_fahhh.mp3 slot for an original/licensed oops sound. Song snippets are limited to ten seconds and played at reduced volume.
+- App settings include mute, app-level Do Not Disturb, quiet hours, receiver pack selection, low-data/battery saver and reduce-motion preferences. Chat-specific mute, important-moods-only and quiet hours are stored locally.
+- Automated language examples are in test/data/mood_samples.json. Run flutter test test/services/mood_detector_multilingual_test.dart to print per-language and total accuracy. This is a curated smoke-test set, not a scientific model benchmark.
+- Android system-level silent/DND state integration, actual licensed media, encrypted local backup/restore, full onboarding polish and accessibility QA remain release tasks; see docs/RELEASE_CHECKLIST.md.

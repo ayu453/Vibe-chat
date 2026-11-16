@@ -1,0 +1,678 @@
+{
+  "en": [
+    {
+      "text": "haha that is hilarious",
+      "mood": "funny"
+    },
+    {
+      "text": "lol what a joke",
+      "mood": "funny"
+    },
+    {
+      "text": "I feel sad today",
+      "mood": "sad"
+    },
+    {
+      "text": "I want to cry",
+      "mood": "sad"
+    },
+    {
+      "text": "wow that is unbelievable",
+      "mood": "shock"
+    },
+    {
+      "text": "I am shocked",
+      "mood": "shock"
+    },
+    {
+      "text": "we won the match",
+      "mood": "win"
+    },
+    {
+      "text": "congrats champion",
+      "mood": "win"
+    },
+    {
+      "text": "I love you so much",
+      "mood": "love"
+    },
+    {
+      "text": "I miss you darling",
+      "mood": "love"
+    },
+    {
+      "text": "I am furious and angry",
+      "mood": "angry"
+    },
+    {
+      "text": "I hate this",
+      "mood": "angry"
+    },
+    {
+      "text": "that is so scary",
+      "mood": "scary"
+    },
+    {
+      "text": "I am bored",
+      "mood": "bored"
+    },
+    {
+      "text": "let us celebrate tonight",
+      "mood": "party"
+    },
+    {
+      "text": "oops my mistake",
+      "mood": "oops"
+    }
+  ],
+  "hi": [
+    {
+      "text": "बहुत मजेदार मजाक",
+      "mood": "funny"
+    },
+    {
+      "text": "हाहाहा हंसी",
+      "mood": "funny"
+    },
+    {
+      "text": "आज मैं दुखी हूं",
+      "mood": "sad"
+    },
+    {
+      "text": "मुझे रोना आ रहा है",
+      "mood": "sad"
+    },
+    {
+      "text": "मैं हैरान हूं",
+      "mood": "shock"
+    },
+    {
+      "text": "यकीन नहीं हो रहा",
+      "mood": "shock"
+    },
+    {
+      "text": "हम जीत गए",
+      "mood": "win"
+    },
+    {
+      "text": "बहुत बहुत बधाई",
+      "mood": "win"
+    },
+    {
+      "text": "तुमसे प्यार है",
+      "mood": "love"
+    },
+    {
+      "text": "मोहब्बत करता हूं",
+      "mood": "love"
+    },
+    {
+      "text": "मुझे गुस्सा आ रहा है",
+      "mood": "angry"
+    },
+    {
+      "text": "मैं नाराज हूं",
+      "mood": "angry"
+    },
+    {
+      "text": "मुझे डर लग रहा है",
+      "mood": "scary"
+    },
+    {
+      "text": "मैं बोर हो गया",
+      "mood": "bored"
+    },
+    {
+      "text": "आज पार्टी है",
+      "mood": "party"
+    },
+    {
+      "text": "मेरी गलती माफ करना",
+      "mood": "oops"
+    },
+    {
+      "text": "majak bahut funny hai",
+      "mood": "funny"
+    },
+    {
+      "text": "main dukhi hoon",
+      "mood": "sad"
+    },
+    {
+      "text": "sach me hairan hoon",
+      "mood": "shock"
+    },
+    {
+      "text": "jeet gaye mubarak",
+      "mood": "win"
+    }
+  ],
+  "es": [
+    {
+      "text": "jajaja que gracioso",
+      "mood": "funny"
+    },
+    {
+      "text": "buena broma",
+      "mood": "funny"
+    },
+    {
+      "text": "estoy triste",
+      "mood": "sad"
+    },
+    {
+      "text": "quiero llorar",
+      "mood": "sad"
+    },
+    {
+      "text": "estoy sorprendido",
+      "mood": "shock"
+    },
+    {
+      "text": "es increíble",
+      "mood": "shock"
+    },
+    {
+      "text": "ganamos el partido",
+      "mood": "win"
+    },
+    {
+      "text": "felicidades campeón",
+      "mood": "win"
+    },
+    {
+      "text": "te quiero mucho",
+      "mood": "love"
+    },
+    {
+      "text": "te amo cariño",
+      "mood": "love"
+    },
+    {
+      "text": "estoy enojado",
+      "mood": "angry"
+    },
+    {
+      "text": "te odio",
+      "mood": "angry"
+    },
+    {
+      "text": "tengo miedo",
+      "mood": "scary"
+    },
+    {
+      "text": "estoy aburrido",
+      "mood": "bored"
+    },
+    {
+      "text": "fiesta de cumpleaños",
+      "mood": "party"
+    },
+    {
+      "text": "ups fue mi culpa",
+      "mood": "oops"
+    }
+  ],
+  "fr": [
+    {
+      "text": "haha cest drôle",
+      "mood": "funny"
+    },
+    {
+      "text": "quelle bonne blague",
+      "mood": "funny"
+    },
+    {
+      "text": "je suis triste",
+      "mood": "sad"
+    },
+    {
+      "text": "je veux pleurer",
+      "mood": "sad"
+    },
+    {
+      "text": "je suis choqué",
+      "mood": "shock"
+    },
+    {
+      "text": "cest incroyable",
+      "mood": "shock"
+    },
+    {
+      "text": "nous avons gagné",
+      "mood": "win"
+    },
+    {
+      "text": "bravo félicitations",
+      "mood": "win"
+    },
+    {
+      "text": "je taime",
+      "mood": "love"
+    },
+    {
+      "text": "tu me manques",
+      "mood": "love"
+    },
+    {
+      "text": "je suis furieux",
+      "mood": "angry"
+    },
+    {
+      "text": "je déteste ça",
+      "mood": "angry"
+    },
+    {
+      "text": "jai peur",
+      "mood": "scary"
+    },
+    {
+      "text": "je mennuie",
+      "mood": "bored"
+    },
+    {
+      "text": "grande fête ce soir",
+      "mood": "party"
+    },
+    {
+      "text": "oups mon erreur",
+      "mood": "oops"
+    }
+  ],
+  "pt": [
+    {
+      "text": "kkkk muito engraçado",
+      "mood": "funny"
+    },
+    {
+      "text": "que piada divertida",
+      "mood": "funny"
+    },
+    {
+      "text": "estou triste",
+      "mood": "sad"
+    },
+    {
+      "text": "quero chorar",
+      "mood": "sad"
+    },
+    {
+      "text": "estou chocado",
+      "mood": "shock"
+    },
+    {
+      "text": "isso é inacreditável",
+      "mood": "shock"
+    },
+    {
+      "text": "nós ganhamos",
+      "mood": "win"
+    },
+    {
+      "text": "parabéns campeão",
+      "mood": "win"
+    },
+    {
+      "text": "eu te amo",
+      "mood": "love"
+    },
+    {
+      "text": "estou com saudades",
+      "mood": "love"
+    },
+    {
+      "text": "estou bravo",
+      "mood": "angry"
+    },
+    {
+      "text": "eu odeio isso",
+      "mood": "angry"
+    },
+    {
+      "text": "estou com medo",
+      "mood": "scary"
+    },
+    {
+      "text": "estou entediado",
+      "mood": "bored"
+    },
+    {
+      "text": "festa de aniversário",
+      "mood": "party"
+    },
+    {
+      "text": "ops foi meu erro",
+      "mood": "oops"
+    }
+  ],
+  "ar": [
+    {
+      "text": "هههه هذا مضحك",
+      "mood": "funny"
+    },
+    {
+      "text": "هذه نكتة مضحكة",
+      "mood": "funny"
+    },
+    {
+      "text": "أنا حزين",
+      "mood": "sad"
+    },
+    {
+      "text": "أريد أن أبكي",
+      "mood": "sad"
+    },
+    {
+      "text": "أنا مصدوم",
+      "mood": "shock"
+    },
+    {
+      "text": "هذا مستحيل",
+      "mood": "shock"
+    },
+    {
+      "text": "فزنا بالمباراة",
+      "mood": "win"
+    },
+    {
+      "text": "مبروك يا بطل",
+      "mood": "win"
+    },
+    {
+      "text": "أحبك كثيرا",
+      "mood": "love"
+    },
+    {
+      "text": "اشتقت لك",
+      "mood": "love"
+    },
+    {
+      "text": "أنا غاضب",
+      "mood": "angry"
+    },
+    {
+      "text": "أكره هذا",
+      "mood": "angry"
+    },
+    {
+      "text": "أنا خائف",
+      "mood": "scary"
+    },
+    {
+      "text": "أنا مللت",
+      "mood": "bored"
+    },
+    {
+      "text": "حفلة عيد ميلاد",
+      "mood": "party"
+    },
+    {
+      "text": "آسف هذا خطئي",
+      "mood": "oops"
+    }
+  ],
+  "ru": [
+    {
+      "text": "это смешно ахаха",
+      "mood": "funny"
+    },
+    {
+      "text": "хорошая шутка",
+      "mood": "funny"
+    },
+    {
+      "text": "мне грустно",
+      "mood": "sad"
+    },
+    {
+      "text": "хочу плакать",
+      "mood": "sad"
+    },
+    {
+      "text": "я удивлен",
+      "mood": "shock"
+    },
+    {
+      "text": "это невероятно",
+      "mood": "shock"
+    },
+    {
+      "text": "мы выиграли",
+      "mood": "win"
+    },
+    {
+      "text": "поздравляю чемпион",
+      "mood": "win"
+    },
+    {
+      "text": "я тебя люблю",
+      "mood": "love"
+    },
+    {
+      "text": "я скучаю",
+      "mood": "love"
+    },
+    {
+      "text": "я злой",
+      "mood": "angry"
+    },
+    {
+      "text": "я ненавижу это",
+      "mood": "angry"
+    },
+    {
+      "text": "мне страшно",
+      "mood": "scary"
+    },
+    {
+      "text": "мне скучно",
+      "mood": "bored"
+    },
+    {
+      "text": "вечеринка сегодня",
+      "mood": "party"
+    },
+    {
+      "text": "ой моя ошибка",
+      "mood": "oops"
+    }
+  ],
+  "id": [
+    {
+      "text": "wkwk ini lucu",
+      "mood": "funny"
+    },
+    {
+      "text": "itu lelucon lucu",
+      "mood": "funny"
+    },
+    {
+      "text": "aku sedih",
+      "mood": "sad"
+    },
+    {
+      "text": "aku ingin menangis",
+      "mood": "sad"
+    },
+    {
+      "text": "aku kaget",
+      "mood": "shock"
+    },
+    {
+      "text": "tidak percaya wow",
+      "mood": "shock"
+    },
+    {
+      "text": "kita menang",
+      "mood": "win"
+    },
+    {
+      "text": "selamat juara",
+      "mood": "win"
+    },
+    {
+      "text": "aku cinta kamu",
+      "mood": "love"
+    },
+    {
+      "text": "aku rindu sayang",
+      "mood": "love"
+    },
+    {
+      "text": "aku marah",
+      "mood": "angry"
+    },
+    {
+      "text": "aku benci ini",
+      "mood": "angry"
+    },
+    {
+      "text": "aku takut",
+      "mood": "scary"
+    },
+    {
+      "text": "aku bosan",
+      "mood": "bored"
+    },
+    {
+      "text": "pesta ulang tahun",
+      "mood": "party"
+    },
+    {
+      "text": "ups salahku",
+      "mood": "oops"
+    }
+  ],
+  "bn": [
+    {
+      "text": "হাহা খুব মজার",
+      "mood": "funny"
+    },
+    {
+      "text": "এটা দারুণ কৌতুক",
+      "mood": "funny"
+    },
+    {
+      "text": "আমার মন খারাপ",
+      "mood": "sad"
+    },
+    {
+      "text": "আমি কাঁদতে চাই",
+      "mood": "sad"
+    },
+    {
+      "text": "আমি অবাক",
+      "mood": "shock"
+    },
+    {
+      "text": "বিশ্বাস হচ্ছে না",
+      "mood": "shock"
+    },
+    {
+      "text": "আমরা জিতেছি",
+      "mood": "win"
+    },
+    {
+      "text": "অভিনন্দন চ্যাম্পিয়ন",
+      "mood": "win"
+    },
+    {
+      "text": "আমি তোমাকে ভালোবাসি",
+      "mood": "love"
+    },
+    {
+      "text": "তোমাকে মিস করছি",
+      "mood": "love"
+    },
+    {
+      "text": "আমার রাগ হচ্ছে",
+      "mood": "angry"
+    },
+    {
+      "text": "আমি বিরক্ত",
+      "mood": "angry"
+    },
+    {
+      "text": "আমার ভয় লাগছে",
+      "mood": "scary"
+    },
+    {
+      "text": "আমি একঘেয়ে বোধ করছি",
+      "mood": "bored"
+    },
+    {
+      "text": "জন্মদিনের পার্টি",
+      "mood": "party"
+    },
+    {
+      "text": "ওহ আমার ভুল",
+      "mood": "oops"
+    }
+  ],
+  "tr": [
+    {
+      "text": "haha çok komik",
+      "mood": "funny"
+    },
+    {
+      "text": "güzel bir şaka",
+      "mood": "funny"
+    },
+    {
+      "text": "çok üzgünüm",
+      "mood": "sad"
+    },
+    {
+      "text": "ağlamak istiyorum",
+      "mood": "sad"
+    },
+    {
+      "text": "çok şaşkınım",
+      "mood": "shock"
+    },
+    {
+      "text": "bu inanılmaz",
+      "mood": "shock"
+    },
+    {
+      "text": "maçı kazandık",
+      "mood": "win"
+    },
+    {
+      "text": "tebrikler şampiyon",
+      "mood": "win"
+    },
+    {
+      "text": "seni seviyorum",
+      "mood": "love"
+    },
+    {
+      "text": "seni özledim",
+      "mood": "love"
+    },
+    {
+      "text": "çok kızgınım",
+      "mood": "angry"
+    },
+    {
+      "text": "bundan nefret ediyorum",
+      "mood": "angry"
+    },
+    {
+      "text": "çok korkuyorum",
+      "mood": "scary"
+    },
+    {
+      "text": "çok sıkıldım",
+      "mood": "bored"
+    },
+    {
+      "text": "doğum günü partisi",
+      "mood": "party"
+    },
+    {
+      "text": "pardon benim hatam",
+      "mood": "oops"
+    }
+  ]
+}

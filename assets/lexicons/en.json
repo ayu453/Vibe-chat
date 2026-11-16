@@ -1,0 +1,85 @@
+{
+  "language": "en",
+  "moods": {
+    "funny": [
+      "haha",
+      "hahaha",
+      "lol",
+      "lmao",
+      "joke",
+      "hilarious",
+      "funny",
+      "rofl"
+    ],
+    "sad": [
+      "sad",
+      "cry",
+      "crying",
+      "hurt",
+      "miss you",
+      "heartbroken",
+      "lonely",
+      "upset"
+    ],
+    "shock": [
+      "wow",
+      "omg",
+      "shocked",
+      "surprised",
+      "unbelievable",
+      "what happened"
+    ],
+    "win": [
+      "won",
+      "winner",
+      "congrats",
+      "victory",
+      "success",
+      "achievement"
+    ],
+    "love": [
+      "love",
+      "miss you",
+      "darling",
+      "beautiful",
+      "adore"
+    ],
+    "angry": [
+      "angry",
+      "hate",
+      "furious",
+      "annoyed",
+      "mad",
+      "irritated"
+    ],
+    "scary": [
+      "scared",
+      "afraid",
+      "creepy",
+      "terrifying",
+      "horror"
+    ],
+    "bored": [
+      "bored",
+      "boring",
+      "tired of this",
+      "nothing to do",
+      "sleepy"
+    ],
+    "party": [
+      "party",
+      "celebrate",
+      "celebration",
+      "let's dance",
+      "birthday"
+    ],
+    "oops": [
+      "oops",
+      "sorry",
+      "my bad",
+      "mistake",
+      "forgot",
+      "messed up"
+    ]
+  }
+}
