@@ -28,6 +28,14 @@ The generated Android runner must include the camera permission and deep-link in
 With the relay running: `cd relay && npm run test:two-clients`.
 Flutter tests: `flutter test`.
 
+## Store-and-forward mesh (foundation in progress)
+- Mesh packets use only `id`, pairwise daily `tag`, `ciphertext`, `createdAt`, `expiresAt`, `hopCount` and `copiesLeft`; sender and recipient IDs are not relay envelope fields.
+- Route tags are HMAC-SHA-256 values derived from the X25519 pairwise shared secret and UTC day. Clients subscribe to today's and yesterday's tags to cover midnight rollover. Never derive tags from public keys.
+- The relay mesh router stores opaque envelopes in RAM (20 MB cap), rejects duplicates and expired packets, and enforces 32 KiB, 48-hour, 8-hop, 6-copy and per-peer rate limits. Relay memory is volatile and is not a durable backup.
+- SQLite outbox support and a deterministic A-B-C-D-E simulator are included as a foundation. The simulator is not a Bluetooth radio test.
+- Real nearby radio discovery/transport, Android foreground/background execution, battery-aware UI settings, recipient-side decrypt/verify and end-to-end receipt envelopes still need integration and device testing. iOS support is not claimed.
+- A five-node simulation proves protocol flow only; it does not guarantee real-world range, delivery time or delivery success.
+
 ## Architecture notes and limitations
 - Ed25519 signs a challenge bound to the username and X25519 public key. X25519 derives a shared secret; XChaCha20-Poly1305 encrypts text, mood ID and sound ID.
 - `InternetTransport` implements `MessageTransport` and reconnects with exponential backoff.

@@ -24,12 +24,12 @@ void main() {
   });
 
   test('store deduplicates and evicts oldest first under byte limit', () {
-    final store = MeshStore(maxBytes: 170);
+    final store = MeshStore(maxBytes: 350);
     expect(store.store(packet(), nowMs: now), isTrue);
     expect(store.store(packet(), nowMs: now), isFalse);
     final newer = MeshEnvelope(
       id: 'envelope_identifier_0002', tag: packet().tag,
-      ciphertext: 'x' * 80, createdAt: now, expiresAt: now + 100000,
+      ciphertext: List.filled(80, 'x').join(), createdAt: now, expiresAt: now + 100000,
       hopCount: 0, copiesLeft: 1);
     store.store(newer, nowMs: now);
     expect(store.contains(newer.id), isTrue);
