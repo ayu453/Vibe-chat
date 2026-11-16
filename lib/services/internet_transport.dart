@@ -118,7 +118,7 @@ class InternetTransport implements MessageTransport {
     final code = sha256.convert(signingBytes).toString().substring(0, 4).toUpperCase();
     if (expectedId != '$username#$code') throw const FormatException('Peer identity fingerprint mismatch');
     final publicKey = SimplePublicKey(signingBytes, type: KeyPairType.ed25519);
-    final signature = Signature(signatureBytes, publicKey: publicKey);
+    final signature = Signature(signatureBytes);
     final binding = utf8.encode('vibe-chat-x25519-v1|$username|$encryptionKey');
     final valid = await Ed25519().verify(binding, signature: signature, publicKey: publicKey);
     if (!valid) throw const FormatException('Peer encryption key signature invalid');
