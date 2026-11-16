@@ -350,6 +350,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _send() async {
+    final contact = await _db.contact(widget.conversationId);
+    if (contact == null || contact['status'] != 'accepted' || (contact['key_changed'] as int? ?? 0) == 1) return;
     final text = _input.text.trim();
     if (text.isEmpty) return;
     final mood = _moods.detect(text);
@@ -393,6 +395,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _receive(ChatMessage message) async {
     if (message.conversationId != widget.conversationId) return;
+    if (message.body.startsWith('vibe-control:')) return;
+    if (await _db.isBlocked(message.conversationId)) return;
+    final contact = await _db.contact(message.conversationId);
+    if (contact == null || contact['status'] != 'accepted' || (contact['key_changed'] as int? ?? 0) == 1) return;
     await _db.insertMessage(message);
     await _onNewMood(message.moodId, soundId: message.soundId);
     if (mounted) setState(() => _messages = [..._messages, message]);
